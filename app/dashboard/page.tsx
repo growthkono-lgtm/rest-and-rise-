@@ -7,6 +7,7 @@ import SubmitForm from "@/components/SubmitForm";
 import SubmissionCard from "@/components/SubmissionCard";
 import { createClient } from "@/lib/supabase/server";
 import type { Submission } from "@/lib/types";
+import { getPoints, wonValue } from "@/lib/points";
 
 export const metadata: Metadata = { title: "마이페이지" };
 
@@ -33,6 +34,8 @@ export default async function DashboardPage() {
   const approvedCount = list.filter((s) => s.status === "approved").length;
   const name = profile?.full_name || user.email?.split("@")[0];
 
+  const { balance, tx } = await getPoints(supabase, user.id);
+
   return (
     <>
       <SiteHeader />
@@ -46,6 +49,52 @@ export default async function DashboardPage() {
               오늘도 회복과 성장의 하루 되세요. 기백씨가 응원하고 있어요.
             </p>
           </div>
+
+          {/* 내 기백씨 포인트 */}
+          <section className="overflow-hidden rounded-3xl border border-leaf/15 bg-gradient-to-br from-forest to-forest-deep p-6 text-white shadow-sm sm:p-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-cream/80">
+                  내 기백씨 포인트
+                </p>
+                <p className="mt-1 font-display text-5xl leading-none">
+                  {balance}
+                  <span className="ml-1 text-2xl">P</span>
+                </p>
+                <p className="mt-2 text-sm text-cream/80">
+                  = {wonValue(balance).toLocaleString()}원 상당 · 유료 웰니스
+                  프로그램 할인에 쓸 수 있어요
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/10 px-4 py-3 text-sm">
+                <p className="text-cream/70">이렇게 모여요</p>
+                <p className="mt-1">가입 선물 5P · 참여 승인마다 10P</p>
+              </div>
+            </div>
+
+            {tx.length > 0 && (
+              <div className="mt-6 border-t border-white/15 pt-4">
+                <p className="mb-2 text-xs font-medium text-cream/70">
+                  최근 적립 내역
+                </p>
+                <ul className="space-y-1.5">
+                  {tx.slice(0, 4).map((t) => (
+                    <li
+                      key={t.id}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span className="text-cream/90">
+                        {t.reason ?? "포인트"}
+                      </span>
+                      <span className="font-semibold">
+                        {t.amount > 0 ? `+${t.amount}` : t.amount}P
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
 
           {/* 기백씨 성장 */}
           <GibaekSeed count={approvedCount} name={name} />

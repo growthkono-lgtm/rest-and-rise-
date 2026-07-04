@@ -21,6 +21,32 @@ export type Profile = {
   created_at: string;
 };
 
+export type CampaignCategory = "봉사" | "리트릿" | "캠페인";
+export type CampaignStatus = "open" | "closed";
+
+export type Campaign = {
+  id: string;
+  title: string;
+  category: CampaignCategory;
+  activity_date: string | null;
+  location: string | null;
+  description: string | null;
+  capacity: number | null;
+  status: CampaignStatus;
+  created_at: string;
+};
+
+export type Application = {
+  id: string;
+  campaign_id: string | null;
+  name: string;
+  phone: string;
+  email: string;
+  consent_privacy: boolean;
+  consent_thirdparty: boolean;
+  created_at: string;
+};
+
 export const STATUS_LABEL: Record<SubmissionStatus, string> = {
   pending: "심사중",
   approved: "승인됨",

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Jua, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
+import InstagramFab from "@/components/InstagramFab";
 
 const jua = Jua({
   variable: "--font-jua",
@@ -43,6 +44,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-cream text-ink">
         {children}
+        <InstagramFab />
       </body>
     </html>
   );

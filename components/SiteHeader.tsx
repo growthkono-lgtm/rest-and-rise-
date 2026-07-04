@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
+import { getPoints } from "@/lib/points";
+import PointsBadge from "@/components/PointsBadge";
 
 export default async function SiteHeader() {
   const supabase = await createClient();
@@ -10,6 +12,7 @@ export default async function SiteHeader() {
   } = await supabase.auth.getUser();
 
   let isAdmin = false;
+  let points = 0;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -17,6 +20,7 @@ export default async function SiteHeader() {
       .eq("id", user.id)
       .single();
     isAdmin = !!profile?.is_admin;
+    points = (await getPoints(supabase, user.id)).balance;
   }
 
   return (
@@ -52,9 +56,10 @@ export default async function SiteHeader() {
 
           {user ? (
             <>
+              <PointsBadge points={points} />
               <Link
                 href="/dashboard"
-                className="rounded-full px-3 py-2 text-ink-soft transition-colors hover:text-forest"
+                className="hidden rounded-full px-3 py-2 text-ink-soft transition-colors hover:text-forest sm:inline-block"
               >
                 마이페이지
               </Link>

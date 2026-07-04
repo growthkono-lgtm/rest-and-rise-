@@ -61,3 +61,65 @@ body {
 .animate-grow-in {
   animation: grow-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ── 히어로 퀘스트 맵 (기백씨 게임 애니메이션) ───────────────────── */
+
+/* 기백씨가 이동 중일 때 통통 뛰는 모션 */
+@keyframes gibaek-hop {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-16%) rotate(3deg); }
+}
+.gibaek-hop { animation: gibaek-hop 0.42s ease-in-out infinite; }
+
+/* 퀘스트 지점에 도착해 쉴 때 살짝 들썩이는 모션 */
+@keyframes gibaek-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6%); }
+}
+.gibaek-idle { animation: gibaek-idle 2.4s ease-in-out infinite; }
+
+/* 그림자 */
+@keyframes shadow-pulse {
+  0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.28; }
+  50% { transform: translateX(-50%) scaleX(0.7); opacity: 0.18; }
+}
+.shadow-pulse { animation: shadow-pulse 0.42s ease-in-out infinite; }
+
+/* 퀘스트 클리어 시 체크 배지 팝 */
+@keyframes pin-pop {
+  0% { transform: scale(0.3); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pin-pop { animation: pin-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* 다음 목표 핀 맥박 */
+@keyframes pin-ring {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  70% { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.pin-ring { animation: pin-ring 1.6s ease-out infinite; }
+
+/* 반짝이 파편 */
+@keyframes sparkle {
+  0% { transform: translate(0, 0) scale(0.2); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translate(var(--sx), var(--sy)) scale(1); opacity: 0; }
+}
+.sparkle { animation: sparkle 0.9s ease-out forwards; }
+
+/* 도착 시 뜨는 퀘스트 이름 말풍선 */
+@keyframes quest-toast {
+  0% { transform: translate(-50%, 4px) scale(0.8); opacity: 0; }
+  15% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+  80% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -8px) scale(1); opacity: 0; }
+}
+.quest-toast { animation: quest-toast 1.9s ease-in-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gibaek-hop, .gibaek-idle, .shadow-pulse, .pin-ring, .sparkle, .quest-toast {
+    animation: none !important;
+  }
+}

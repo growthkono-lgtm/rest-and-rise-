@@ -73,14 +73,22 @@ export default async function AdminPage({
       <SiteHeader />
       <main className="flex-1 bg-cream">
         <div className="mx-auto max-w-5xl space-y-8 px-5 py-10 sm:py-14">
-          <div>
-            <p className="font-medium text-leaf">ADMIN</p>
-            <h1 className="mt-1 font-display text-3xl text-forest sm:text-4xl">
-              참여 제출 관리
-            </h1>
-            <p className="mt-2 text-ink-soft">
-              모든 봉사·캠페인 참여 제출을 확인하고 승인/반려할 수 있어요.
-            </p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="font-medium text-leaf">ADMIN</p>
+              <h1 className="mt-1 font-display text-3xl text-forest sm:text-4xl">
+                참여 제출 관리
+              </h1>
+              <p className="mt-2 text-ink-soft">
+                모든 봉사·캠페인 참여 제출을 확인하고 승인/반려할 수 있어요.
+              </p>
+            </div>
+            <Link
+              href="/admin/campaigns"
+              className="rounded-full border border-leaf/25 bg-white px-4 py-2 text-sm text-ink-soft hover:bg-cream-deep"
+            >
+              캠페인 · 신청 관리 →
+            </Link>
           </div>
 
           {/* 통계 */}

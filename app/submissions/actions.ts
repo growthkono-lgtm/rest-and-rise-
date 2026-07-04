@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { SubmissionStatus } from "@/lib/types";
+import { POINTS } from "@/lib/points";
 
 export type SubmitState = { error?: string; ok?: boolean } | null;
 
@@ -90,6 +91,24 @@ export async function updateSubmissionStatus(formData: FormData) {
   if (!profile?.is_admin) return;
 
   await supabase.from("submissions").update({ status }).eq("id", id);
+
+  // 승인 시 기백씨 포인트 지급 (submission_id 유니크 → 중복 지급 방지)
+  if (status === "approved") {
+    const { data: sub } = await supabase
+      .from("submissions")
+      .select("user_id")
+      .eq("id", id)
+      .single();
+    if (sub?.user_id) {
+      await supabase.from("point_transactions").insert({
+        user_id: sub.user_id,
+        amount: POINTS.approvedActivity,
+        reason: "봉사·캠페인 참여 승인",
+        submission_id: id,
+      });
+    }
+  }
+
   revalidatePath("/admin");
   revalidatePath("/dashboard");
 }

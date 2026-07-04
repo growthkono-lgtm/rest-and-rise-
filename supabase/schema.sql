@@ -97,6 +97,11 @@ begin
     new.email = 'ceo@h-grs.com'  -- ADMIN_EMAIL
   )
   on conflict (id) do nothing;
+
+  -- 가입 선물 5P
+  insert into public.point_transactions (user_id, amount, reason)
+  values (new.id, 5, '가입 선물');
+
   return new;
 end;
 $$;
@@ -111,13 +116,86 @@ insert into storage.buckets (id, name, public)
 values ('proofs', 'proofs', true)
 on conflict (id) do nothing;
 
-drop policy if exists "proofs - public read" on storage.objects;
-create policy "proofs - public read"
-  on storage.objects for select
-  using (bucket_id = 'proofs');
+-- 참고: 공개 버킷이라 직접 URL 접근은 정책 없이 동작한다.
+-- 목록(열거) 노출을 막기 위해 별도의 broad SELECT 정책은 두지 않는다.
 
 drop policy if exists "proofs - authenticated upload" on storage.objects;
 create policy "proofs - authenticated upload"
   on storage.objects for insert
   to authenticated
   with check (bucket_id = 'proofs');
+
+-- ── campaigns (모집 캠페인/일정) ────────────────────────────────────
+create table if not exists public.campaigns (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  category text not null default '봉사' check (category in ('봉사', '리트릿', '캠페인')),
+  activity_date date,
+  location text,
+  description text,
+  capacity int,
+  status text not null default 'open' check (status in ('open', 'closed')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.campaigns enable row level security;
+
+drop policy if exists "campaigns - public read" on public.campaigns;
+create policy "campaigns - public read"
+  on public.campaigns for select using (true);
+
+drop policy if exists "campaigns - admin write" on public.campaigns;
+create policy "campaigns - admin write"
+  on public.campaigns for all
+  using (public.is_admin()) with check (public.is_admin());
+
+-- ── applications (캠페인 신청 — 게스트 제출) ────────────────────────
+create table if not exists public.applications (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid references public.campaigns on delete set null,
+  user_id uuid references auth.users on delete set null,
+  name text not null,
+  phone text not null,
+  email text not null,
+  consent_privacy boolean not null default false,
+  consent_thirdparty boolean not null default false,
+  created_at timestamptz not null default now(),
+  constraint applications_privacy_required check (consent_privacy = true)
+);
+
+create index if not exists applications_campaign_id_idx on public.applications (campaign_id);
+
+alter table public.applications enable row level security;
+
+-- 로그인 사용자가 본인 명의로만 신청
+drop policy if exists "applications - insert own" on public.applications;
+create policy "applications - insert own"
+  on public.applications for insert with check (auth.uid() = user_id);
+
+drop policy if exists "applications - own read" on public.applications;
+create policy "applications - own read"
+  on public.applications for select using (auth.uid() = user_id or public.is_admin());
+
+-- ── point_transactions (기백씨 포인트 원장 · 1P = 10원) ──────────────
+create table if not exists public.point_transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  amount int not null,
+  reason text,
+  submission_id uuid references public.submissions on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists point_tx_submission_uniq
+  on public.point_transactions (submission_id) where submission_id is not null;
+create index if not exists point_tx_user_idx on public.point_transactions (user_id);
+
+alter table public.point_transactions enable row level security;
+
+drop policy if exists "points - own read" on public.point_transactions;
+create policy "points - own read" on public.point_transactions
+  for select using (auth.uid() = user_id or public.is_admin());
+
+drop policy if exists "points - admin insert" on public.point_transactions;
+create policy "points - admin insert" on public.point_transactions
+  for insert with check (public.is_admin());
