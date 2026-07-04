@@ -4,6 +4,15 @@
 --       또는  supabase db push (마이그레이션으로 사용할 경우)
 -- =====================================================================
 
+-- ── profiles (먼저 생성: 아래 is_admin 함수가 이 테이블을 참조하므로 순서 중요) ─
+create table if not exists public.profiles (
+  id uuid primary key references auth.users on delete cascade,
+  email text,
+  full_name text,
+  is_admin boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
 -- ── 관리자 판별 함수 (RLS 재귀 방지: SECURITY DEFINER) ──────────────
 create or replace function public.is_admin()
 returns boolean
@@ -17,15 +26,6 @@ as $$
     false
   );
 $$;
-
--- ── profiles ────────────────────────────────────────────────────────
-create table if not exists public.profiles (
-  id uuid primary key references auth.users on delete cascade,
-  email text,
-  full_name text,
-  is_admin boolean not null default false,
-  created_at timestamptz not null default now()
-);
 
 alter table public.profiles enable row level security;
 
