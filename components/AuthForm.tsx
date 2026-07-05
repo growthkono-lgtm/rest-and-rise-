@@ -58,7 +58,7 @@ export default function AuthForm({
             label="닉네임"
             name="nickname"
             type="text"
-            placeholder="마을에서 불릴 이름"
+            placeholder="활동할 때 불릴 이름"
             autoComplete="nickname"
           />
           <Field

@@ -90,7 +90,7 @@ export default async function Home() {
                   href="/#story"
                   className="w-full rounded-full bg-forest px-7 py-3.5 text-center font-medium text-white shadow-md transition-colors hover:bg-forest-deep sm:w-auto"
                 >
-                  마을 둘러보기
+                  여정 둘러보기
                 </Link>
                 <Link
                   href="/#activities"
@@ -240,7 +240,7 @@ export default async function Home() {
             <div className="text-center">
               <p className="font-medium text-leaf">OUR JOURNEY</p>
               <h2 className="mt-2 font-display text-3xl text-forest sm:text-4xl">
-                함께 걸어온 활동
+                정기 활동 히스토리
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-ink-soft">
                 레스트앤라이즈가 지나온 봉사와 웰니스의 순간들이에요.
@@ -359,7 +359,7 @@ export default async function Home() {
             <h2 className="font-display text-3xl text-white sm:text-4xl">
               레스트앤라이즈
               <br />
-              마을 입주하기
+              동료 가입하기
             </h2>
             <p className="mx-auto mt-4 max-w-md text-balance text-cream/80">
               봉사로 내 마음속 씨앗을 키우며, 회복과 성장의 여정을 함께해요.

@@ -95,7 +95,7 @@ export default function WorldGameMap() {
       preserveAspectRatio="xMidYMid meet"
       className="block h-full w-full"
       role="img"
-      aria-label="레스트앤라이즈 마을 지도 — 기백씨들이 함께 봉사하며 자라나요"
+      aria-label="레스트앤라이즈 활동 지도 — 기백씨들이 함께 봉사하며 자라나요"
     >
       <defs>
         <radialGradient id="ground" cx="50%" cy="45%" r="72%">

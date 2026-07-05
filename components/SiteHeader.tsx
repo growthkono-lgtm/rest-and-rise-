@@ -45,7 +45,7 @@ export default async function SiteHeader() {
             href="/#story"
             className="hidden rounded-full px-3 py-2 text-ink-soft transition-colors hover:text-forest sm:inline-block"
           >
-            마을
+            여정
           </Link>
           <Link
             href="/#activities"
@@ -92,7 +92,7 @@ export default async function SiteHeader() {
                 href="/signup"
                 className="rounded-full bg-forest px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-forest-deep"
               >
-                입주하기
+                동참하기
               </Link>
             </>
           )}

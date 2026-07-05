@@ -32,7 +32,7 @@ export default function SiteFooter() {
           </a>
           <div className="flex gap-4">
             <Link href="/signup" className="transition-colors hover:text-forest">
-              입주하기
+              동참하기
             </Link>
             <Link href="/login" className="transition-colors hover:text-forest">
               로그인
