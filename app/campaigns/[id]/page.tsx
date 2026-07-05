@@ -82,6 +82,12 @@ export default async function CampaignApplyPage({
               {campaign.capacity ? (
                 <Info label="👥 모집 인원" value={`${campaign.capacity}명`} />
               ) : null}
+              {campaign.reward_points > 0 ? (
+                <Info
+                  label="🌱 참여 포인트"
+                  value={`기백씨 +${campaign.reward_points}P`}
+                />
+              ) : null}
             </dl>
 
             {campaign.description && (

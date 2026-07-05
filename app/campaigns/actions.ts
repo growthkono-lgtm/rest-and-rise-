@@ -169,6 +169,7 @@ function readCampaignFields(formData: FormData) {
   const capacityRaw = String(formData.get("capacity") || "").trim();
   const fee_label = String(formData.get("fee_label") || "").trim();
   const fee_note = String(formData.get("fee_note") || "").trim();
+  const rewardRaw = String(formData.get("reward_points") || "").trim();
 
   return {
     title,
@@ -180,5 +181,6 @@ function readCampaignFields(formData: FormData) {
     capacity: capacityRaw ? Number(capacityRaw) : null,
     fee_label: fee_label || "무료",
     fee_note: fee_note || null,
+    reward_points: rewardRaw ? Math.max(0, Math.floor(Number(rewardRaw))) : 0,
   };
 }

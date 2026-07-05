@@ -173,6 +173,7 @@ create table if not exists public.campaigns (
   capacity int,
   fee_label text default '무료',
   fee_note text,
+  reward_points int not null default 0,           -- 참여 시 지급 기백씨 포인트
   status text not null default 'open' check (status in ('open', 'closed', 'completed')),
   deleted_at timestamptz,                         -- 소프트 삭제(휴지통)
   deleted_by uuid references auth.users on delete set null,

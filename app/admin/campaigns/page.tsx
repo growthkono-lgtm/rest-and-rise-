@@ -131,6 +131,18 @@ export default async function AdminCampaignsPage() {
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-ink">
+                  참여 포인트 (기백씨)
+                </span>
+                <input
+                  name="reward_points"
+                  type="number"
+                  min="0"
+                  placeholder="예: 30"
+                  className={inputCls}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-ink">
                   비용 표기
                 </span>
                 <input
@@ -217,6 +229,7 @@ export default async function AdminCampaignsPage() {
                         {c.activity_date ?? "일정 미정"}
                         {c.activity_time ? ` ${c.activity_time}` : ""} ·{" "}
                         {c.location ?? "-"} · 신청 {appCount.get(c.id) ?? 0}명
+                        {c.reward_points > 0 && ` · 🌱 ${c.reward_points}P`}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -451,6 +464,16 @@ function CampaignEditor({ c }: { c: Campaign }) {
               type="number"
               min="1"
               defaultValue={c.capacity ?? ""}
+              className={inputCls}
+            />
+          </label>
+          <label className="block">
+            <span className={labelCls}>참여 포인트 (기백씨)</span>
+            <input
+              name="reward_points"
+              type="number"
+              min="0"
+              defaultValue={c.reward_points ?? 0}
               className={inputCls}
             />
           </label>

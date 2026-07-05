@@ -211,10 +211,15 @@ export default async function Home() {
                       key={c.id}
                       className="flex flex-col rounded-2xl border-2 border-forest/20 bg-white p-6 shadow-sm"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="rounded-full bg-butter px-2.5 py-1 text-xs font-semibold text-forest-deep">
                           {c.fee_label ?? "무료"}
                         </span>
+                        {c.reward_points > 0 && (
+                          <span className="rounded-full bg-sprout/20 px-2.5 py-1 text-xs font-semibold text-forest">
+                            🌱 기백씨 +{c.reward_points}P
+                          </span>
+                        )}
                         <span className="text-xs font-semibold text-forest">
                           ● 모집 중
                         </span>

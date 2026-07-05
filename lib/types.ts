@@ -51,6 +51,7 @@ export type Campaign = {
   capacity: number | null;
   fee_label: string | null;
   fee_note: string | null;
+  reward_points: number;
   status: CampaignStatus;
   deleted_at: string | null;
   deleted_by: string | null;
