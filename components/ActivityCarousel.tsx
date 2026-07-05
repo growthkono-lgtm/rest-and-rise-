@@ -7,11 +7,19 @@ type Activity = {
   name: string;
   tag: string;
   tagType: string;
-  img: string;
+  img?: string | null;
   desc: string;
+  date?: string;
 };
 
 type Upcoming = { name: string; tag: string };
+
+// 사진이 없는 완료 활동은 분류별 이모지/그라데이션으로 표시
+const CATEGORY_EMOJI: Record<string, string> = {
+  봉사: "🤝",
+  리트릿: "🧘",
+  캠페인: "📣",
+};
 
 export default function ActivityCarousel({
   activities,
@@ -76,15 +84,21 @@ export default function ActivityCarousel({
               key={a.name}
               className="group w-[280px] shrink-0 snap-start overflow-hidden rounded-2xl border border-leaf/15 bg-white shadow-sm transition-shadow hover:shadow-md sm:w-[300px]"
             >
-              {/* 활동 사진 */}
+              {/* 활동 사진 (없으면 분류 이모지 플레이스홀더) */}
               <div className="relative aspect-[4/3] overflow-hidden">
-                <Image
-                  src={a.img}
-                  alt={a.name}
-                  fill
-                  sizes="300px"
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                {a.img ? (
+                  <Image
+                    src={a.img}
+                    alt={a.name}
+                    fill
+                    sizes="300px"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sprout/25 via-cream-deep to-butter text-5xl">
+                    {CATEGORY_EMOJI[a.tagType] ?? "🌿"}
+                  </div>
+                )}
                 <span
                   className={`absolute left-3 top-3 z-10 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm ${
                     a.tagType === "봉사"
@@ -97,6 +111,9 @@ export default function ActivityCarousel({
               </div>
               <div className="p-5">
                 <h3 className="font-display text-xl text-forest">{a.name}</h3>
+                {a.date && (
+                  <p className="mt-1 text-xs font-medium text-leaf">{a.date}</p>
+                )}
                 <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
                   {a.desc}
                 </p>

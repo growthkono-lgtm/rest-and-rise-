@@ -64,11 +64,27 @@ export default async function Home() {
   const { data } = await supabase
     .from("campaigns")
     .select("*")
-    .eq("status", "open")
     .is("deleted_at", null)
-    .order("activity_date", { ascending: true })
     .returns<Campaign[]>();
-  const campaigns = data ?? [];
+  const all = data ?? [];
+
+  // 모집 중 프로그램 (날짜 빠른 순)
+  const campaigns = all
+    .filter((c) => c.status === "open")
+    .sort((a, b) => (a.activity_date ?? "").localeCompare(b.activity_date ?? ""));
+
+  // 완료된 활동 → 여정 히스토리 (최근 순)
+  const completed = all
+    .filter((c) => c.status === "completed")
+    .sort((a, b) => (b.activity_date ?? "").localeCompare(a.activity_date ?? ""));
+
+  const journeyActivities = completed.map((c) => ({
+    name: c.title,
+    tag: c.category,
+    tagType: c.category,
+    desc: c.description ?? "",
+    date: fmtDate(c.activity_date),
+  }));
 
   return (
     <>
@@ -248,8 +264,13 @@ export default async function Home() {
               </p>
             </div>
 
-            {/* 스와이프 카드 */}
-            <ActivityCarousel activities={ACTIVITIES} upcoming={UPCOMING} />
+            {/* 스와이프 카드 — 완료된 활동이 있으면 실제 데이터, 없으면 샘플 */}
+            <ActivityCarousel
+              activities={
+                journeyActivities.length > 0 ? journeyActivities : ACTIVITIES
+              }
+              upcoming={UPCOMING}
+            />
           </div>
         </section>
 

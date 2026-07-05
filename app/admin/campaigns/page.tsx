@@ -37,7 +37,9 @@ export default async function AdminCampaignsPage() {
     .select("*")
     .order("created_at", { ascending: false });
   const allCampaigns = (camps ?? []) as Campaign[];
-  const campaigns = allCampaigns.filter((c) => !c.deleted_at);
+  const live = allCampaigns.filter((c) => !c.deleted_at);
+  const programs = live.filter((c) => c.status !== "completed"); // 모집중 · 마감
+  const history = live.filter((c) => c.status === "completed"); // 완료 = 여정 히스토리
   const trashed = allCampaigns.filter((c) => c.deleted_at);
 
   const { data: apps } = await supabase
@@ -46,7 +48,7 @@ export default async function AdminCampaignsPage() {
     .order("created_at", { ascending: false });
   const applications = (apps ?? []) as Application[];
 
-  const titleById = new Map(campaigns.map((c) => [c.id, c.title]));
+  const titleById = new Map(allCampaigns.map((c) => [c.id, c.title]));
   const appCount = new Map<string, number>();
   for (const a of applications) {
     if (a.campaign_id)
@@ -75,7 +77,9 @@ export default async function AdminCampaignsPage() {
 
           {/* 새 캠페인 등록 */}
           <section className="rounded-2xl border border-leaf/15 bg-white p-6 shadow-sm">
-            <h2 className="font-display text-xl text-forest">새 일정 열기</h2>
+            <h2 className="font-display text-xl text-forest">
+              새 프로그램 · 활동 등록
+            </h2>
             <form
               action={createCampaign}
               className="mt-4 grid gap-4 sm:grid-cols-2"
@@ -155,24 +159,39 @@ export default async function AdminCampaignsPage() {
                   className={`${inputCls} resize-none`}
                 />
               </label>
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm font-medium text-ink">
+                  등록 상태
+                </span>
+                <select name="status" defaultValue="open" className={inputCls}>
+                  <option value="open">모집 시작 (지금 참여 받기)</option>
+                  <option value="completed">
+                    완료된 지난 활동으로 등록 (여정 히스토리)
+                  </option>
+                </select>
+              </label>
               <div className="sm:col-span-2">
                 <button
                   type="submit"
                   className="rounded-full bg-forest px-8 py-3 font-medium text-white transition-colors hover:bg-forest-deep"
                 >
-                  일정 등록 (모집 시작)
+                  등록하기
                 </button>
               </div>
             </form>
           </section>
 
-          {/* 프로그램 목록 */}
+          {/* 프로그램 목록 (모집중 · 마감) */}
           <section>
             <h2 className="font-display text-xl text-forest">
-              프로그램 ({campaigns.length})
+              프로그램 ({programs.length})
             </h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              <b>마감</b>은 모집만 닫혀요. <b>완료 처리</b>하면 여정 히스토리로
+              넘어가고, <b>삭제</b>는 휴지통으로 이동해요.
+            </p>
             <div className="mt-4 grid gap-3">
-              {campaigns.map((c) => (
+              {programs.map((c) => (
                 <div
                   key={c.id}
                   className="rounded-2xl border border-leaf/15 bg-white p-4 shadow-sm"
@@ -190,7 +209,7 @@ export default async function AdminCampaignsPage() {
                               : "text-ink-soft/60"
                           }`}
                         >
-                          {c.status === "open" ? "● 모집 중" : "○ 마감"}
+                          {c.status === "open" ? "● 모집 중" : "○ 모집 마감"}
                         </span>
                       </div>
                       <p className="mt-1 font-medium text-ink">{c.title}</p>
@@ -200,146 +219,94 @@ export default async function AdminCampaignsPage() {
                         {c.location ?? "-"} · 신청 {appCount.get(c.id) ?? 0}명
                       </p>
                     </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <form action={setCampaignStatus}>
+                        <input type="hidden" name="id" value={c.id} />
+                        <input
+                          type="hidden"
+                          name="status"
+                          value={c.status === "open" ? "closed" : "open"}
+                        />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-leaf/25 px-4 py-2 text-sm text-ink-soft hover:bg-cream-deep"
+                        >
+                          {c.status === "open" ? "마감하기" : "다시 열기"}
+                        </button>
+                      </form>
+                      <form action={setCampaignStatus}>
+                        <input type="hidden" name="id" value={c.id} />
+                        <input type="hidden" name="status" value="completed" />
+                        <button
+                          type="submit"
+                          className="rounded-full bg-forest px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-forest-deep"
+                        >
+                          완료 처리 →
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <CampaignEditor c={c} />
+                </div>
+              ))}
+              {programs.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-leaf/30 bg-white p-8 text-center text-ink-soft">
+                  등록된 프로그램이 없어요.
+                </p>
+              )}
+            </div>
+          </section>
+
+          {/* 여정 히스토리 (완료된 활동) */}
+          <section>
+            <h2 className="font-display text-xl text-forest">
+              여정 히스토리 ({history.length})
+            </h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              완료 처리된 활동이에요. 홈페이지 <b>정기 활동 히스토리</b>에 표시돼요.
+              수정·삭제하거나, 다시 프로그램으로 되돌릴 수 있어요.
+            </p>
+            <div className="mt-4 grid gap-3">
+              {history.map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-2xl border border-leaf/15 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-cream-deep px-2 py-0.5 text-xs font-medium text-forest">
+                          {c.category}
+                        </span>
+                        <span className="text-xs font-semibold text-leaf">
+                          ✓ 완료
+                        </span>
+                      </div>
+                      <p className="mt-1 font-medium text-ink">{c.title}</p>
+                      <p className="text-sm text-ink-soft">
+                        {c.activity_date ?? "일정 미정"} · {c.location ?? "-"}
+                      </p>
+                    </div>
                     <form action={setCampaignStatus}>
                       <input type="hidden" name="id" value={c.id} />
-                      <input
-                        type="hidden"
-                        name="status"
-                        value={c.status === "open" ? "closed" : "open"}
-                      />
+                      <input type="hidden" name="status" value="closed" />
                       <button
                         type="submit"
                         className="rounded-full border border-leaf/25 px-4 py-2 text-sm text-ink-soft hover:bg-cream-deep"
                       >
-                        {c.status === "open" ? "마감하기" : "다시 열기"}
+                        프로그램으로 되돌리기
                       </button>
                     </form>
                   </div>
-
-                  {/* 수정 · 삭제 */}
-                  <details className="mt-3">
-                    <summary className="cursor-pointer text-sm font-medium text-forest">
-                      수정 · 삭제
-                    </summary>
-                    <div className="mt-3 border-t border-leaf/10 pt-4">
-                      <form
-                        action={updateCampaign}
-                        className="grid gap-3 sm:grid-cols-2"
-                      >
-                        <input type="hidden" name="id" value={c.id} />
-                        <input type="hidden" name="status" value={c.status} />
-                        <label className="block sm:col-span-2">
-                          <span className={labelCls}>제목 *</span>
-                          <input
-                            name="title"
-                            required
-                            defaultValue={c.title}
-                            className={inputCls}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className={labelCls}>분류</span>
-                          <select
-                            name="category"
-                            defaultValue={c.category}
-                            className={inputCls}
-                          >
-                            <option value="봉사">봉사</option>
-                            <option value="리트릿">리트릿</option>
-                            <option value="캠페인">캠페인</option>
-                          </select>
-                        </label>
-                        <label className="block">
-                          <span className={labelCls}>모집 인원</span>
-                          <input
-                            name="capacity"
-                            type="number"
-                            min="1"
-                            defaultValue={c.capacity ?? ""}
-                            className={inputCls}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className={labelCls}>활동 날짜</span>
-                          <input
-                            name="activity_date"
-                            type="date"
-                            defaultValue={c.activity_date ?? ""}
-                            className={inputCls}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className={labelCls}>활동 시간</span>
-                          <input
-                            name="activity_time"
-                            type="time"
-                            defaultValue={c.activity_time ?? ""}
-                            className={inputCls}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className={labelCls}>장소</span>
-                          <input
-                            name="location"
-                            defaultValue={c.location ?? ""}
-                            className={inputCls}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className={labelCls}>비용 표기</span>
-                          <input
-                            name="fee_label"
-                            defaultValue={c.fee_label ?? ""}
-                            placeholder="무료 / 실비 1/n"
-                            className={inputCls}
-                          />
-                        </label>
-                        <label className="block sm:col-span-2">
-                          <span className={labelCls}>비용 안내</span>
-                          <input
-                            name="fee_note"
-                            defaultValue={c.fee_note ?? ""}
-                            placeholder="예: 방진복 제공 · 식사비만 실비 1/n"
-                            className={inputCls}
-                          />
-                        </label>
-                        <label className="block sm:col-span-2">
-                          <span className={labelCls}>내용</span>
-                          <textarea
-                            name="description"
-                            rows={3}
-                            defaultValue={c.description ?? ""}
-                            className={`${inputCls} resize-none`}
-                          />
-                        </label>
-                        <div className="sm:col-span-2">
-                          <button
-                            type="submit"
-                            className="rounded-full bg-forest px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-forest-deep"
-                          >
-                            저장
-                          </button>
-                        </div>
-                      </form>
-                      <form
-                        action={deleteCampaign}
-                        className="mt-3 border-t border-leaf/10 pt-3"
-                      >
-                        <input type="hidden" name="id" value={c.id} />
-                        <button
-                          type="submit"
-                          className="text-sm font-medium text-red-600 hover:underline"
-                        >
-                          휴지통으로 이동
-                        </button>
-                        <span className="ml-2 text-xs text-ink-soft/60">
-                          삭제해도 휴지통에서 복원할 수 있어요.
-                        </span>
-                      </form>
-                    </div>
-                  </details>
+                  <CampaignEditor c={c} />
                 </div>
               ))}
+              {history.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-leaf/30 bg-white p-8 text-center text-ink-soft">
+                  아직 완료된 활동이 없어요.
+                </p>
+              )}
             </div>
           </section>
 
@@ -442,6 +409,130 @@ export default async function AdminCampaignsPage() {
       </main>
       <SiteFooter />
     </>
+  );
+}
+
+// 프로그램/히스토리 공용 수정·삭제 폼
+function CampaignEditor({ c }: { c: Campaign }) {
+  return (
+    <details className="mt-3">
+      <summary className="cursor-pointer text-sm font-medium text-forest">
+        수정 · 삭제
+      </summary>
+      <div className="mt-3 border-t border-leaf/10 pt-4">
+        <form action={updateCampaign} className="grid gap-3 sm:grid-cols-2">
+          <input type="hidden" name="id" value={c.id} />
+          <input type="hidden" name="status" value={c.status} />
+          <label className="block sm:col-span-2">
+            <span className={labelCls}>제목 *</span>
+            <input
+              name="title"
+              required
+              defaultValue={c.title}
+              className={inputCls}
+            />
+          </label>
+          <label className="block">
+            <span className={labelCls}>분류</span>
+            <select
+              name="category"
+              defaultValue={c.category}
+              className={inputCls}
+            >
+              <option value="봉사">봉사</option>
+              <option value="리트릿">리트릿</option>
+              <option value="캠페인">캠페인</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className={labelCls}>모집 인원</span>
+            <input
+              name="capacity"
+              type="number"
+              min="1"
+              defaultValue={c.capacity ?? ""}
+              className={inputCls}
+            />
+          </label>
+          <label className="block">
+            <span className={labelCls}>활동 날짜</span>
+            <input
+              name="activity_date"
+              type="date"
+              defaultValue={c.activity_date ?? ""}
+              className={inputCls}
+            />
+          </label>
+          <label className="block">
+            <span className={labelCls}>활동 시간</span>
+            <input
+              name="activity_time"
+              type="time"
+              defaultValue={c.activity_time ?? ""}
+              className={inputCls}
+            />
+          </label>
+          <label className="block">
+            <span className={labelCls}>장소</span>
+            <input
+              name="location"
+              defaultValue={c.location ?? ""}
+              className={inputCls}
+            />
+          </label>
+          <label className="block">
+            <span className={labelCls}>비용 표기</span>
+            <input
+              name="fee_label"
+              defaultValue={c.fee_label ?? ""}
+              placeholder="무료 / 실비 1/n"
+              className={inputCls}
+            />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className={labelCls}>비용 안내</span>
+            <input
+              name="fee_note"
+              defaultValue={c.fee_note ?? ""}
+              placeholder="예: 방진복 제공 · 식사비만 실비 1/n"
+              className={inputCls}
+            />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className={labelCls}>내용</span>
+            <textarea
+              name="description"
+              rows={3}
+              defaultValue={c.description ?? ""}
+              className={`${inputCls} resize-none`}
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              className="rounded-full bg-forest px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-forest-deep"
+            >
+              저장
+            </button>
+          </div>
+        </form>
+        <form
+          action={deleteCampaign}
+          className="mt-3 border-t border-leaf/10 pt-3"
+        >
+          <input type="hidden" name="id" value={c.id} />
+          <button
+            type="submit"
+            className="text-sm font-medium text-red-600 hover:underline"
+          >
+            휴지통으로 이동
+          </button>
+          <span className="ml-2 text-xs text-ink-soft/60">
+            삭제해도 휴지통에서 복원할 수 있어요.
+          </span>
+        </form>
+      </div>
+    </details>
   );
 }
 

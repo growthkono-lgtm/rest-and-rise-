@@ -67,7 +67,11 @@ export async function createCampaign(formData: FormData) {
   const fields = readCampaignFields(formData);
   if (!fields) return;
 
-  await ctx.supabase.from("campaigns").insert({ ...fields, status: "open" });
+  // 등록 시 상태 선택: 모집 시작(open) 또는 완료된 지난 활동(completed)
+  const statusRaw = String(formData.get("status") || "open");
+  const status = statusRaw === "completed" ? "completed" : "open";
+
+  await ctx.supabase.from("campaigns").insert({ ...fields, status });
 
   revalidatePath("/admin/campaigns");
   revalidatePath("/");
@@ -87,7 +91,7 @@ export async function updateCampaign(formData: FormData) {
     .from("campaigns")
     .update({
       ...fields,
-      status: ["open", "closed"].includes(status) ? status : "open",
+      status: ["open", "closed", "completed"].includes(status) ? status : "open",
     })
     .eq("id", id);
 
@@ -146,7 +150,7 @@ export async function setCampaignStatus(formData: FormData) {
 
   const id = String(formData.get("id") || "");
   const status = String(formData.get("status") || "");
-  if (!id || !["open", "closed"].includes(status)) return;
+  if (!id || !["open", "closed", "completed"].includes(status)) return;
 
   await ctx.supabase.from("campaigns").update({ status }).eq("id", id);
   revalidatePath("/admin/campaigns");

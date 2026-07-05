@@ -32,7 +32,13 @@ export type Profile = {
 };
 
 export type CampaignCategory = "봉사" | "리트릿" | "캠페인";
-export type CampaignStatus = "open" | "closed";
+export type CampaignStatus = "open" | "closed" | "completed";
+
+export const CAMPAIGN_STATUS_LABEL: Record<CampaignStatus, string> = {
+  open: "모집 중",
+  closed: "모집 마감",
+  completed: "완료",
+};
 
 export type Campaign = {
   id: string;
