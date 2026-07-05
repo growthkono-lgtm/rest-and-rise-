@@ -144,6 +144,72 @@ export async function purgeCampaign(formData: FormData) {
   revalidatePath("/");
 }
 
+// 현장 참여 완료 처리 → 해당 프로그램의 기백씨 포인트 지급 (중복 방지)
+export async function markAttended(formData: FormData) {
+  const ctx = await requireStaff();
+  if (!ctx) return;
+
+  const id = String(formData.get("application_id") || "");
+  if (!id) return;
+
+  const { data: app } = await ctx.supabase
+    .from("applications")
+    .select("id, user_id, campaign_id, status")
+    .eq("id", id)
+    .single();
+  if (!app || !app.user_id || app.status === "attended") return;
+
+  let reward = 0;
+  let title = "프로그램";
+  if (app.campaign_id) {
+    const { data: c } = await ctx.supabase
+      .from("campaigns")
+      .select("title, reward_points")
+      .eq("id", app.campaign_id)
+      .single();
+    reward = c?.reward_points ?? 0;
+    title = c?.title ?? "프로그램";
+  }
+
+  await ctx.supabase
+    .from("applications")
+    .update({ status: "attended", attended_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (reward > 0) {
+    await ctx.supabase.from("point_transactions").insert({
+      user_id: app.user_id,
+      amount: reward,
+      reason: `참여 완료: ${title}`,
+      application_id: id,
+    });
+  }
+
+  revalidatePath("/admin/campaigns");
+  revalidatePath("/dashboard");
+}
+
+// 참여 완료 취소 → 지급 포인트 회수
+export async function undoAttended(formData: FormData) {
+  const ctx = await requireStaff();
+  if (!ctx) return;
+
+  const id = String(formData.get("application_id") || "");
+  if (!id) return;
+
+  await ctx.supabase
+    .from("point_transactions")
+    .delete()
+    .eq("application_id", id);
+  await ctx.supabase
+    .from("applications")
+    .update({ status: "applied", attended_at: null })
+    .eq("id", id);
+
+  revalidatePath("/admin/campaigns");
+  revalidatePath("/dashboard");
+}
+
 export async function setCampaignStatus(formData: FormData) {
   const ctx = await requireStaff();
   if (!ctx) return;

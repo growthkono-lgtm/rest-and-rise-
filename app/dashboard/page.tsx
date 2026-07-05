@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import GibaekSeed from "@/components/GibaekSeed";
-import SubmitForm from "@/components/SubmitForm";
-import SubmissionCard from "@/components/SubmissionCard";
 import { createClient } from "@/lib/supabase/server";
-import type { Submission } from "@/lib/types";
+import type { Application } from "@/lib/types";
 import { getPoints, wonValue } from "@/lib/points";
 
 export const metadata: Metadata = { title: "마이페이지" };
@@ -23,16 +22,33 @@ export default async function DashboardPage() {
     .select("full_name")
     .eq("id", user.id)
     .single();
+  const name = profile?.full_name || user.email?.split("@")[0];
 
-  const { data: submissions } = await supabase
-    .from("submissions")
+  // 내가 신청한 프로그램
+  const { data: apps } = await supabase
+    .from("applications")
     .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+  const myApps = (apps ?? []) as Application[];
+  const attendedCount = myApps.filter((a) => a.status === "attended").length;
 
-  const list = (submissions ?? []) as Submission[];
-  const approvedCount = list.filter((s) => s.status === "approved").length;
-  const name = profile?.full_name || user.email?.split("@")[0];
+  // 신청한 프로그램 제목/날짜
+  const campIds = [
+    ...new Set(myApps.map((a) => a.campaign_id).filter(Boolean)),
+  ] as string[];
+  const titleById = new Map<string, string>();
+  const dateById = new Map<string, string | null>();
+  if (campIds.length) {
+    const { data: camps } = await supabase
+      .from("campaigns")
+      .select("id, title, activity_date")
+      .in("id", campIds);
+    for (const c of camps ?? []) {
+      titleById.set(c.id, c.title);
+      dateById.set(c.id, c.activity_date);
+    }
+  }
 
   const { balance, tx } = await getPoints(supabase, user.id);
 
@@ -62,13 +78,12 @@ export default async function DashboardPage() {
                   <span className="ml-1 text-2xl">P</span>
                 </p>
                 <p className="mt-2 text-sm text-cream/80">
-                  = {wonValue(balance).toLocaleString()}원 상당 · 유료 웰니스
-                  프로그램 할인에 쓸 수 있어요
+                  = {wonValue(balance).toLocaleString()}원 상당
                 </p>
               </div>
               <div className="rounded-2xl bg-white/10 px-4 py-3 text-sm">
                 <p className="text-cream/70">이렇게 모여요</p>
-                <p className="mt-1">가입 선물 5P · 참여 승인마다 10P</p>
+                <p className="mt-1">가입 선물 5P · 프로그램 참여 완료 시 지급</p>
               </div>
             </div>
 
@@ -97,44 +112,68 @@ export default async function DashboardPage() {
           </section>
 
           {/* 기백씨 성장 */}
-          <GibaekSeed count={approvedCount} name={name} />
+          <GibaekSeed count={attendedCount} name={name} />
 
-          {/* 참여 제출 */}
-          <section className="rounded-3xl border border-leaf/15 bg-cream-deep/40 p-6 sm:p-8">
-            <h2 className="font-display text-2xl text-forest">
-              봉사·캠페인 참여 제출
-            </h2>
-            <p className="mt-1 text-sm text-ink-soft">
-              참여한 활동을 남겨주세요. 승인되면 기백씨가 한 뼘 더 자라나요.
-            </p>
-            <div className="mt-6">
-              <SubmitForm />
-            </div>
-          </section>
-
-          {/* 내 제출 내역 */}
+          {/* 내 참여 프로그램 */}
           <section>
             <div className="flex items-baseline justify-between">
               <h2 className="font-display text-2xl text-forest">
-                내 참여 내역
+                내 참여 프로그램
               </h2>
               <span className="text-sm text-ink-soft">
-                총 {list.length}건 · 승인 {approvedCount}건
+                신청 {myApps.length}건 · 참여 완료 {attendedCount}건
               </span>
             </div>
+            <p className="mt-1 text-sm text-ink-soft">
+              참여 완료는 현장에서 운영진이 확인해 드려요. 완료되면 기백씨 포인트가
+              지급돼요.
+            </p>
 
-            {list.length === 0 ? (
+            {myApps.length === 0 ? (
               <div className="mt-4 rounded-2xl border border-dashed border-leaf/30 bg-white p-10 text-center">
                 <p className="text-4xl">🌰</p>
                 <p className="mt-3 text-ink-soft">
-                  아직 제출한 활동이 없어요. 첫 활동을 남기고 기백씨를 깨워보세요!
+                  아직 신청한 프로그램이 없어요. 함께할 프로그램을 찾아보세요!
                 </p>
+                <Link
+                  href="/#activities"
+                  className="mt-4 inline-block rounded-full bg-forest px-6 py-2.5 text-sm font-medium text-white hover:bg-forest-deep"
+                >
+                  프로그램 둘러보기 →
+                </Link>
               </div>
             ) : (
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                {list.map((s) => (
-                  <SubmissionCard key={s.id} submission={s} />
-                ))}
+              <div className="mt-4 grid gap-3">
+                {myApps.map((a) => {
+                  const title =
+                    (a.campaign_id && titleById.get(a.campaign_id)) ||
+                    "프로그램";
+                  const date =
+                    (a.campaign_id && dateById.get(a.campaign_id)) || null;
+                  const attended = a.status === "attended";
+                  return (
+                    <div
+                      key={a.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-leaf/15 bg-white p-5 shadow-sm"
+                    >
+                      <div>
+                        <p className="font-medium text-ink">{title}</p>
+                        <p className="text-sm text-ink-soft">
+                          {date ?? "일정 조율 중"}
+                        </p>
+                      </div>
+                      {attended ? (
+                        <span className="rounded-full bg-sprout/20 px-3 py-1 text-sm font-semibold text-forest">
+                          ✓ 참여 완료
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-cream-deep px-3 py-1 text-sm font-medium text-ink-soft">
+                          신청 완료 · 참여 대기
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>

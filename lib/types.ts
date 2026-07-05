@@ -58,12 +58,17 @@ export type Campaign = {
   created_at: string;
 };
 
+export type ApplicationStatus = "applied" | "attended";
+
 export type Application = {
   id: string;
   campaign_id: string | null;
+  user_id: string | null;
   name: string;
   phone: string;
   email: string;
+  status: ApplicationStatus;
+  attended_at: string | null;
   consent_privacy: boolean;
   consent_thirdparty: boolean;
   created_at: string;

@@ -242,6 +242,8 @@ create table if not exists public.applications (
   name text not null,
   phone text not null,
   email text not null,
+  status text not null default 'applied' check (status in ('applied', 'attended')),
+  attended_at timestamptz,
   consent_privacy boolean not null default false,
   consent_thirdparty boolean not null default false,
   created_at timestamptz not null default now(),
@@ -261,6 +263,11 @@ drop policy if exists "applications - own read" on public.applications;
 create policy "applications - own read"
   on public.applications for select using (auth.uid() = user_id or public.is_admin());
 
+-- 운영진이 참여 완료 처리(상태 변경) 가능
+drop policy if exists "applications - staff update" on public.applications;
+create policy "applications - staff update" on public.applications
+  for update using (public.is_admin()) with check (public.is_admin());
+
 -- ── point_transactions (기백씨 포인트 원장 · 1P = 10원) ──────────────
 create table if not exists public.point_transactions (
   id uuid primary key default gen_random_uuid(),
@@ -275,6 +282,12 @@ create unique index if not exists point_tx_submission_uniq
   on public.point_transactions (submission_id) where submission_id is not null;
 create index if not exists point_tx_user_idx on public.point_transactions (user_id);
 
+-- 신청 건 연계(현장 참여완료 지급) + 중복 지급 방지
+alter table public.point_transactions
+  add column if not exists application_id uuid references public.applications on delete set null;
+create unique index if not exists point_tx_application_uniq
+  on public.point_transactions (application_id) where application_id is not null;
+
 alter table public.point_transactions enable row level security;
 
 drop policy if exists "points - own read" on public.point_transactions;
@@ -284,3 +297,8 @@ create policy "points - own read" on public.point_transactions
 drop policy if exists "points - admin insert" on public.point_transactions;
 create policy "points - admin insert" on public.point_transactions
   for insert with check (public.is_admin());
+
+-- 참여완료 취소 시 지급 포인트 회수(운영진)
+drop policy if exists "points - staff delete" on public.point_transactions;
+create policy "points - staff delete" on public.point_transactions
+  for delete using (public.is_admin());

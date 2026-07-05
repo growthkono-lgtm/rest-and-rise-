@@ -10,13 +10,21 @@ import {
   restoreCampaign,
   purgeCampaign,
   setCampaignStatus,
+  markAttended,
+  undoAttended,
 } from "@/app/campaigns/actions";
 import { createClient } from "@/lib/supabase/server";
 import type { Application, Campaign } from "@/lib/types";
 
 export const metadata: Metadata = { title: "프로그램 관리" };
 
-export default async function AdminCampaignsPage() {
+export default async function AdminCampaignsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q = "" } = await searchParams;
+  const query = q.trim();
   const supabase = await createClient();
   const {
     data: { user },
@@ -49,11 +57,22 @@ export default async function AdminCampaignsPage() {
   const applications = (apps ?? []) as Application[];
 
   const titleById = new Map(allCampaigns.map((c) => [c.id, c.title]));
+  const rewardById = new Map(allCampaigns.map((c) => [c.id, c.reward_points]));
   const appCount = new Map<string, number>();
   for (const a of applications) {
     if (a.campaign_id)
       appCount.set(a.campaign_id, (appCount.get(a.campaign_id) ?? 0) + 1);
   }
+
+  // 현장 조회용: 연락처·이름 검색
+  const qDigits = query.replace(/\D/g, "");
+  const visibleApps = query
+    ? applications.filter(
+        (a) =>
+          a.name.includes(query) ||
+          (qDigits && a.phone.replace(/\D/g, "").includes(qDigits)),
+      )
+    : applications;
 
   return (
     <>
@@ -375,44 +394,121 @@ export default async function AdminCampaignsPage() {
             </section>
           )}
 
-          {/* 신청자 목록 */}
+          {/* 신청자 · 현장 참여 완료 */}
           <section>
             <h2 className="font-display text-xl text-forest">
               신청자 ({applications.length})
             </h2>
-            {applications.length === 0 ? (
+            <p className="mt-1 text-sm text-ink-soft">
+              현장에서 참여자를 <b>연락처로 검색</b>해 <b>참여 완료</b>를 누르면
+              그 프로그램의 기백씨 포인트가 지급돼요.
+            </p>
+
+            {/* 연락처/이름 검색 */}
+            <form method="get" className="mt-4 flex gap-2">
+              <input
+                name="q"
+                defaultValue={query}
+                placeholder="연락처 또는 이름으로 검색 (예: 010-1234)"
+                className={`${inputCls} max-w-xs`}
+              />
+              <button
+                type="submit"
+                className="rounded-full bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-forest-deep"
+              >
+                검색
+              </button>
+              {query && (
+                <Link
+                  href="/admin/campaigns"
+                  className="rounded-full border border-leaf/25 px-5 py-2.5 text-sm text-ink-soft hover:bg-cream-deep"
+                >
+                  전체
+                </Link>
+              )}
+            </form>
+
+            {visibleApps.length === 0 ? (
               <div className="mt-4 rounded-2xl border border-dashed border-leaf/30 bg-white p-8 text-center text-ink-soft">
-                아직 신청자가 없어요.
+                {query ? "검색 결과가 없어요." : "아직 신청자가 없어요."}
               </div>
             ) : (
               <div className="mt-4 overflow-x-auto rounded-2xl border border-leaf/15 bg-white shadow-sm">
-                <table className="w-full min-w-[640px] text-left text-sm">
+                <table className="w-full min-w-[720px] text-left text-sm">
                   <thead className="border-b border-leaf/10 text-ink-soft">
                     <tr>
                       <th className="px-4 py-3 font-medium">이름</th>
                       <th className="px-4 py-3 font-medium">연락처</th>
-                      <th className="px-4 py-3 font-medium">이메일</th>
                       <th className="px-4 py-3 font-medium">신청 프로그램</th>
-                      <th className="px-4 py-3 font-medium">제3자</th>
+                      <th className="px-4 py-3 font-medium">상태</th>
+                      <th className="px-4 py-3 font-medium">참여 처리</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {applications.map((a) => (
-                      <tr key={a.id} className="border-b border-leaf/5">
-                        <td className="px-4 py-3 font-medium text-ink">
-                          {a.name}
-                        </td>
-                        <td className="px-4 py-3 text-ink-soft">{a.phone}</td>
-                        <td className="px-4 py-3 text-ink-soft">{a.email}</td>
-                        <td className="px-4 py-3 text-ink-soft">
-                          {(a.campaign_id && titleById.get(a.campaign_id)) ||
-                            "-"}
-                        </td>
-                        <td className="px-4 py-3 text-ink-soft">
-                          {a.consent_thirdparty ? "동의" : "미동의"}
-                        </td>
-                      </tr>
-                    ))}
+                    {visibleApps.map((a) => {
+                      const reward =
+                        (a.campaign_id && rewardById.get(a.campaign_id)) || 0;
+                      const attended = a.status === "attended";
+                      return (
+                        <tr key={a.id} className="border-b border-leaf/5">
+                          <td className="px-4 py-3 font-medium text-ink">
+                            {a.name}
+                          </td>
+                          <td className="px-4 py-3 text-ink-soft">{a.phone}</td>
+                          <td className="px-4 py-3 text-ink-soft">
+                            {(a.campaign_id && titleById.get(a.campaign_id)) ||
+                              "-"}
+                            {reward > 0 && (
+                              <span className="ml-1 text-xs text-leaf">
+                                (+{reward}P)
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {attended ? (
+                              <span className="rounded-full bg-sprout/20 px-2.5 py-0.5 text-xs font-semibold text-forest">
+                                ✓ 참여 완료
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-cream-deep px-2.5 py-0.5 text-xs font-medium text-ink-soft">
+                                신청됨
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {attended ? (
+                              <form action={undoAttended}>
+                                <input
+                                  type="hidden"
+                                  name="application_id"
+                                  value={a.id}
+                                />
+                                <button
+                                  type="submit"
+                                  className="text-xs font-medium text-ink-soft/70 hover:text-red-600 hover:underline"
+                                >
+                                  완료 취소
+                                </button>
+                              </form>
+                            ) : (
+                              <form action={markAttended}>
+                                <input
+                                  type="hidden"
+                                  name="application_id"
+                                  value={a.id}
+                                />
+                                <button
+                                  type="submit"
+                                  className="rounded-full bg-forest px-4 py-1.5 text-xs font-semibold text-white hover:bg-forest-deep"
+                                >
+                                  참여 완료 처리
+                                </button>
+                              </form>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
