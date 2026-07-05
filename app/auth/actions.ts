@@ -6,23 +6,33 @@ import { createClient } from "@/lib/supabase/server";
 
 export type AuthState = { error?: string; message?: string } | null;
 
+// 로그인 ID로는 Supabase가 이메일을 요구하므로, 연락처(숫자만)로
+// 내부용 이메일을 만들어 사용한다. 사용자에게는 노출되지 않는다.
+function phoneToLoginEmail(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  return `u${digits}@members.rest-and-rise.app`;
+}
+
 export async function login(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const email = String(formData.get("email") || "").trim();
+  const phone = String(formData.get("phone") || "").trim();
   const password = String(formData.get("password") || "");
   const next = String(formData.get("next") || "/dashboard");
 
-  if (!email || !password) {
-    return { error: "이메일과 비밀번호를 입력해주세요." };
+  if (!phone || !password) {
+    return { error: "연락처와 비밀번호를 입력해주세요." };
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email: phoneToLoginEmail(phone),
+    password,
+  });
 
   if (error) {
-    return { error: "이메일 또는 비밀번호가 올바르지 않아요." };
+    return { error: "연락처 또는 비밀번호가 올바르지 않아요." };
   }
 
   revalidatePath("/", "layout");
@@ -36,13 +46,12 @@ export async function signup(
   const name = String(formData.get("name") || "").trim();
   const nickname = String(formData.get("nickname") || "").trim();
   const phone = String(formData.get("phone") || "").trim();
-  const email = String(formData.get("email") || "").trim();
   const password = String(formData.get("password") || "");
   const consentPrivacy = formData.get("consent_privacy") === "on";
   const consentThirdparty = formData.get("consent_thirdparty") === "on";
   const consentMarketing = formData.get("consent_marketing") === "on";
 
-  if (!name || !phone || !email || !password) {
+  if (!name || !phone || !password) {
     return { error: "모든 항목을 입력해주세요." };
   }
   if (!/^[\d-]{9,13}$/.test(phone.replace(/\s/g, ""))) {
@@ -57,7 +66,7 @@ export async function signup(
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
-    email,
+    email: phoneToLoginEmail(phone),
     password,
     options: {
       data: {
@@ -74,13 +83,7 @@ export async function signup(
   if (error) {
     const msg = error.message.toLowerCase();
     if (msg.includes("registered") || error.code === "user_already_exists") {
-      return { error: "이미 가입된 이메일이에요. 로그인해주세요." };
-    }
-    if (error.code === "email_address_invalid" || msg.includes("invalid")) {
-      return {
-        error:
-          "실제로 받아볼 수 있는 이메일 주소를 입력해주세요. (test@gmail.com 처럼 가상의 주소는 이메일 서버에서 거부돼요)",
-      };
+      return { error: "이미 가입된 연락처예요. 로그인해주세요." };
     }
     if (msg.includes("weak") || msg.includes("password")) {
       return { error: "비밀번호가 너무 약해요. 더 안전한 비밀번호를 써주세요." };
@@ -91,22 +94,20 @@ export async function signup(
       msg.includes("rate limit")
     ) {
       return {
-        error:
-          "가입 확인 메일 전송 한도를 초과했어요. 잠시 후 다시 시도해주세요. (반복 테스트 시 발생할 수 있어요)",
+        error: "잠시 후 다시 시도해주세요. (요청이 잠깐 몰렸어요)",
       };
     }
     return { error: "가입 중 문제가 발생했어요. 잠시 후 다시 시도해주세요." };
   }
 
-  // 이메일 확인이 꺼져 있으면 바로 세션이 생겨요.
+  // 세션이 바로 생기면 가입 완료 → 대시보드로.
   if (data.session) {
     revalidatePath("/", "layout");
     redirect("/dashboard");
   }
 
   return {
-    message:
-      "가입 확인 메일을 보냈어요. 메일함에서 인증을 완료한 뒤 로그인해주세요.",
+    message: "가입이 접수됐어요. 잠시 후 로그인해주세요.",
   };
 }
 
