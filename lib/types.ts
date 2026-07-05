@@ -13,11 +13,21 @@ export type Submission = {
   created_at: string;
 };
 
+export type Role = "owner" | "manager" | "member";
+
+export const ROLE_LABEL: Record<Role, string> = {
+  owner: "관리자",
+  manager: "부관리자",
+  member: "일반",
+};
+
 export type Profile = {
   id: string;
   email: string | null;
   full_name: string | null;
-  is_admin: boolean;
+  nickname: string | null;
+  phone: string | null;
+  role: Role;
   created_at: string;
 };
 
@@ -36,6 +46,8 @@ export type Campaign = {
   fee_label: string | null;
   fee_note: string | null;
   status: CampaignStatus;
+  deleted_at: string | null;
+  deleted_by: string | null;
   created_at: string;
 };
 

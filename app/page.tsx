@@ -65,6 +65,7 @@ export default async function Home() {
     .from("campaigns")
     .select("*")
     .eq("status", "open")
+    .is("deleted_at", null)
     .order("activity_date", { ascending: true })
     .returns<Campaign[]>();
   const campaigns = data ?? [];

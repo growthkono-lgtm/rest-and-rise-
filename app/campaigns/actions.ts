@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireStaff, requireOwner } from "@/lib/auth";
 
 export type ApplyState = { error?: string; ok?: boolean } | null;
 
@@ -58,38 +59,23 @@ export async function createApplication(
   return { ok: true };
 }
 
-// ── 관리자 전용 ─────────────────────────────────────────────────────
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
-  if (!profile?.is_admin) return null;
-  return supabase;
-}
-
+// ── 운영진(오너·부관리자) 전용 ──────────────────────────────────────
 export async function createCampaign(formData: FormData) {
-  const supabase = await requireAdmin();
-  if (!supabase) return;
+  const ctx = await requireStaff();
+  if (!ctx) return;
 
   const fields = readCampaignFields(formData);
   if (!fields) return;
 
-  await supabase.from("campaigns").insert({ ...fields, status: "open" });
+  await ctx.supabase.from("campaigns").insert({ ...fields, status: "open" });
 
   revalidatePath("/admin/campaigns");
   revalidatePath("/");
 }
 
 export async function updateCampaign(formData: FormData) {
-  const supabase = await requireAdmin();
-  if (!supabase) return;
+  const ctx = await requireStaff();
+  if (!ctx) return;
 
   const id = String(formData.get("id") || "");
   if (!id) return;
@@ -97,7 +83,7 @@ export async function updateCampaign(formData: FormData) {
   if (!fields) return;
   const status = String(formData.get("status") || "open");
 
-  await supabase
+  await ctx.supabase
     .from("campaigns")
     .update({
       ...fields,
@@ -109,27 +95,60 @@ export async function updateCampaign(formData: FormData) {
   revalidatePath("/");
 }
 
+// 삭제 = 휴지통으로 이동(소프트 삭제). 운영진 누구나 가능, 복원 가능.
 export async function deleteCampaign(formData: FormData) {
-  const supabase = await requireAdmin();
-  if (!supabase) return;
+  const ctx = await requireStaff();
+  if (!ctx) return;
 
   const id = String(formData.get("id") || "");
   if (!id) return;
 
-  await supabase.from("campaigns").delete().eq("id", id);
+  await ctx.supabase
+    .from("campaigns")
+    .update({ deleted_at: new Date().toISOString(), deleted_by: ctx.user.id })
+    .eq("id", id);
+  revalidatePath("/admin/campaigns");
+  revalidatePath("/");
+}
+
+// 휴지통에서 복원(롤백). 운영진 누구나 가능.
+export async function restoreCampaign(formData: FormData) {
+  const ctx = await requireStaff();
+  if (!ctx) return;
+
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+
+  await ctx.supabase
+    .from("campaigns")
+    .update({ deleted_at: null, deleted_by: null })
+    .eq("id", id);
+  revalidatePath("/admin/campaigns");
+  revalidatePath("/");
+}
+
+// 완전 삭제(휴지통 비우기) — 오너만. 되돌릴 수 없음.
+export async function purgeCampaign(formData: FormData) {
+  const ctx = await requireOwner();
+  if (!ctx) return;
+
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+
+  await ctx.supabase.from("campaigns").delete().eq("id", id);
   revalidatePath("/admin/campaigns");
   revalidatePath("/");
 }
 
 export async function setCampaignStatus(formData: FormData) {
-  const supabase = await requireAdmin();
-  if (!supabase) return;
+  const ctx = await requireStaff();
+  if (!ctx) return;
 
   const id = String(formData.get("id") || "");
   const status = String(formData.get("status") || "");
   if (!id || !["open", "closed"].includes(status)) return;
 
-  await supabase.from("campaigns").update({ status }).eq("id", id);
+  await ctx.supabase.from("campaigns").update({ status }).eq("id", id);
   revalidatePath("/admin/campaigns");
   revalidatePath("/");
 }

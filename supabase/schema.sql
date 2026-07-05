@@ -11,7 +11,7 @@ create table if not exists public.profiles (
   full_name text,
   nickname text,
   phone text,
-  is_admin boolean not null default false,
+  role text not null default 'member' check (role in ('owner', 'manager', 'member')),
   consent_privacy boolean not null default false,
   consent_thirdparty boolean not null default false,
   consent_at timestamptz,
@@ -20,7 +20,8 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
--- ── 관리자 판별 함수 (RLS 재귀 방지: SECURITY DEFINER) ──────────────
+-- ── 권한 판별 함수 (RLS 재귀 방지: SECURITY DEFINER) ────────────────
+-- is_admin() = 운영진(오너 + 부관리자),  is_owner() = 오너(최고권한)
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -29,12 +30,29 @@ stable
 set search_path = public
 as $$
   select coalesce(
-    (select is_admin from public.profiles where id = auth.uid()),
+    (select role in ('owner', 'manager') from public.profiles where id = auth.uid()),
+    false
+  );
+$$;
+
+create or replace function public.is_owner()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select coalesce(
+    (select role = 'owner' from public.profiles where id = auth.uid()),
     false
   );
 $$;
 
 alter table public.profiles enable row level security;
+
+-- role 컬럼 직접 수정 차단(권한 상승 방지). 변경은 아래 RPC(정의자)로만.
+revoke update (role) on public.profiles from authenticated;
+revoke update (role) on public.profiles from anon;
 
 drop policy if exists "own profile - select" on public.profiles;
 create policy "own profile - select"
@@ -88,7 +106,7 @@ create policy "submissions - delete"
   using (auth.uid() = user_id or public.is_admin());
 
 -- ── 신규 가입 시 프로필 자동 생성 트리거 ────────────────────────────
--- ⚠️ 관리자 이메일을 아래 ADMIN_EMAIL 에 맞게 바꿔주세요.
+-- 모든 신규 회원은 role='member'. 오너/부관리자는 가입 후 지정한다.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -97,7 +115,7 @@ set search_path = public
 as $$
 begin
   insert into public.profiles (
-    id, email, full_name, nickname, phone, is_admin,
+    id, email, full_name, nickname, phone, role,
     consent_privacy, consent_thirdparty, consent_at,
     consent_marketing, consent_marketing_at
   )
@@ -107,7 +125,7 @@ begin
     coalesce(new.raw_user_meta_data->>'full_name', ''),
     nullif(new.raw_user_meta_data->>'nickname', ''),
     nullif(new.raw_user_meta_data->>'phone', ''),
-    new.email = 'ceo@h-grs.com',  -- ADMIN_EMAIL
+    'member',  -- 오너/부관리자는 가입 후 관리자가 지정
     coalesce((new.raw_user_meta_data->>'consent_privacy')::boolean, false),
     coalesce((new.raw_user_meta_data->>'consent_thirdparty')::boolean, false),
     case when (new.raw_user_meta_data->>'consent_privacy') = 'true' then now() else null end,
@@ -156,6 +174,8 @@ create table if not exists public.campaigns (
   fee_label text default '무료',
   fee_note text,
   status text not null default 'open' check (status in ('open', 'closed')),
+  deleted_at timestamptz,                         -- 소프트 삭제(휴지통)
+  deleted_by uuid references auth.users on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -165,10 +185,53 @@ drop policy if exists "campaigns - public read" on public.campaigns;
 create policy "campaigns - public read"
   on public.campaigns for select using (true);
 
+-- 등록/수정 = 운영진(오너·부관리자), 완전삭제(휴지통 비우기) = 오너만
 drop policy if exists "campaigns - admin write" on public.campaigns;
-create policy "campaigns - admin write"
-  on public.campaigns for all
+drop policy if exists "campaigns - staff insert" on public.campaigns;
+create policy "campaigns - staff insert"
+  on public.campaigns for insert with check (public.is_admin());
+
+drop policy if exists "campaigns - staff update" on public.campaigns;
+create policy "campaigns - staff update"
+  on public.campaigns for update
   using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "campaigns - owner delete" on public.campaigns;
+create policy "campaigns - owner delete"
+  on public.campaigns for delete using (public.is_owner());
+
+-- ── 운영진 관리 RPC (오너 전용, 정의자 권한으로 role 변경) ────────────
+create or replace function public.promote_manager_by_phone(p_phone text)
+returns text language plpgsql security definer set search_path = public as $$
+declare v_digits text; v_id uuid; v_role text;
+begin
+  if not public.is_owner() then return 'forbidden'; end if;
+  v_digits := regexp_replace(coalesce(p_phone, ''), '\D', '', 'g');
+  if length(v_digits) < 9 then return 'invalid'; end if;
+  select id, role into v_id, v_role from public.profiles
+    where regexp_replace(coalesce(phone, ''), '\D', '', 'g') = v_digits
+    limit 1;
+  if v_id is null then return 'notfound'; end if;
+  if v_role = 'owner' then return 'is_owner'; end if;
+  if v_role = 'manager' then return 'already'; end if;
+  update public.profiles set role = 'manager' where id = v_id;
+  return 'ok';
+end $$;
+
+create or replace function public.demote_to_member(p_id uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare v_role text;
+begin
+  if not public.is_owner() then return 'forbidden'; end if;
+  select role into v_role from public.profiles where id = p_id;
+  if v_role is null then return 'notfound'; end if;
+  if v_role = 'owner' then return 'is_owner'; end if;
+  update public.profiles set role = 'member' where id = p_id;
+  return 'ok';
+end $$;
+
+grant execute on function public.promote_manager_by_phone(text) to authenticated;
+grant execute on function public.demote_to_member(uuid) to authenticated;
 
 -- ── applications (캠페인 신청 — 게스트 제출) ────────────────────────
 create table if not exists public.applications (

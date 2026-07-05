@@ -85,10 +85,10 @@ export async function updateSubmissionStatus(formData: FormData) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("role")
     .eq("id", user.id)
     .single();
-  if (!profile?.is_admin) return;
+  if (profile?.role !== "owner" && profile?.role !== "manager") return;
 
   await supabase.from("submissions").update({ status }).eq("id", id);
 

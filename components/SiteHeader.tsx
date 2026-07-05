@@ -11,15 +11,15 @@ export default async function SiteHeader() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let isAdmin = false;
+  let isStaff = false;
   let points = 0;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("is_admin")
+      .select("role")
       .eq("id", user.id)
       .single();
-    isAdmin = !!profile?.is_admin;
+    isStaff = profile?.role === "owner" || profile?.role === "manager";
     points = (await getPoints(supabase, user.id)).balance;
   }
 
@@ -63,7 +63,7 @@ export default async function SiteHeader() {
               >
                 마이페이지
               </Link>
-              {isAdmin && (
+              {isStaff && (
                 <Link
                   href="/admin"
                   className="rounded-full px-3 py-2 font-medium text-forest transition-colors hover:text-forest-deep"

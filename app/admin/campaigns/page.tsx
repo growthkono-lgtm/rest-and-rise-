@@ -7,6 +7,8 @@ import {
   createCampaign,
   updateCampaign,
   deleteCampaign,
+  restoreCampaign,
+  purgeCampaign,
   setCampaignStatus,
 } from "@/app/campaigns/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -23,16 +25,20 @@ export default async function AdminCampaignsPage() {
 
   const { data: me } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("role")
     .eq("id", user.id)
     .single();
-  if (!me?.is_admin) redirect("/dashboard");
+  const isStaff = me?.role === "owner" || me?.role === "manager";
+  if (!isStaff) redirect("/dashboard");
+  const isOwner = me?.role === "owner";
 
   const { data: camps } = await supabase
     .from("campaigns")
     .select("*")
     .order("created_at", { ascending: false });
-  const campaigns = (camps ?? []) as Campaign[];
+  const allCampaigns = (camps ?? []) as Campaign[];
+  const campaigns = allCampaigns.filter((c) => !c.deleted_at);
+  const trashed = allCampaigns.filter((c) => c.deleted_at);
 
   const { data: apps } = await supabase
     .from("applications")
@@ -324,8 +330,11 @@ export default async function AdminCampaignsPage() {
                           type="submit"
                           className="text-sm font-medium text-red-600 hover:underline"
                         >
-                          이 프로그램 삭제
+                          휴지통으로 이동
                         </button>
+                        <span className="ml-2 text-xs text-ink-soft/60">
+                          삭제해도 휴지통에서 복원할 수 있어요.
+                        </span>
                       </form>
                     </div>
                   </details>
@@ -333,6 +342,58 @@ export default async function AdminCampaignsPage() {
               ))}
             </div>
           </section>
+
+          {/* 휴지통 */}
+          {trashed.length > 0 && (
+            <section>
+              <h2 className="font-display text-xl text-forest">
+                🗑 휴지통 ({trashed.length})
+              </h2>
+              <p className="mt-1 text-sm text-ink-soft">
+                삭제된 프로그램이에요. 복원하면 다시 목록으로 돌아와요.
+                {isOwner && " 완전 삭제는 되돌릴 수 없어요."}
+              </p>
+              <div className="mt-4 grid gap-3">
+                {trashed.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-leaf/25 bg-cream-deep/30 p-4"
+                  >
+                    <div>
+                      <p className="font-medium text-ink-soft line-through">
+                        {c.title}
+                      </p>
+                      <p className="text-xs text-ink-soft/70">
+                        {c.category} · {c.activity_date ?? "일정 미정"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <form action={restoreCampaign}>
+                        <input type="hidden" name="id" value={c.id} />
+                        <button
+                          type="submit"
+                          className="rounded-full bg-sprout/20 px-4 py-2 text-sm font-medium text-forest transition-colors hover:bg-sprout/30"
+                        >
+                          복원
+                        </button>
+                      </form>
+                      {isOwner && (
+                        <form action={purgeCampaign}>
+                          <input type="hidden" name="id" value={c.id} />
+                          <button
+                            type="submit"
+                            className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                          >
+                            완전 삭제
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* 신청자 목록 */}
           <section>

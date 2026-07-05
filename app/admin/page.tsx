@@ -37,10 +37,12 @@ export default async function AdminPage({
 
   const { data: me } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("role")
     .eq("id", user.id)
     .single();
-  if (!me?.is_admin) redirect("/dashboard");
+  const isStaff = me?.role === "owner" || me?.role === "manager";
+  if (!isStaff) redirect("/dashboard");
+  const isOwner = me?.role === "owner";
 
   // 전체 제출 + 제출자 프로필
   const { data: subs } = await supabase
@@ -51,7 +53,7 @@ export default async function AdminPage({
 
   const { data: profs } = await supabase
     .from("profiles")
-    .select("id, email, full_name, is_admin, created_at");
+    .select("id, email, full_name, nickname, phone, role, created_at");
   const profileMap = new Map<string, Profile>(
     ((profs ?? []) as Profile[]).map((p) => [p.id, p]),
   );
@@ -83,12 +85,22 @@ export default async function AdminPage({
                 모든 봉사·캠페인 참여 제출을 확인하고 승인/반려할 수 있어요.
               </p>
             </div>
-            <Link
-              href="/admin/campaigns"
-              className="rounded-full border border-leaf/25 bg-white px-4 py-2 text-sm text-ink-soft hover:bg-cream-deep"
-            >
-              캠페인 · 신청 관리 →
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              {isOwner && (
+                <Link
+                  href="/admin/staff"
+                  className="rounded-full border border-leaf/25 bg-white px-4 py-2 text-sm text-ink-soft hover:bg-cream-deep"
+                >
+                  운영진 관리 →
+                </Link>
+              )}
+              <Link
+                href="/admin/campaigns"
+                className="rounded-full border border-leaf/25 bg-white px-4 py-2 text-sm text-ink-soft hover:bg-cream-deep"
+              >
+                프로그램 · 신청 관리 →
+              </Link>
+            </div>
           </div>
 
           {/* 통계 */}

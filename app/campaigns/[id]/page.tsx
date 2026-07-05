@@ -36,6 +36,7 @@ export default async function CampaignApplyPage({
     .from("campaigns")
     .select("*")
     .eq("id", id)
+    .is("deleted_at", null)
     .single<Campaign>();
 
   if (!campaign) notFound();
