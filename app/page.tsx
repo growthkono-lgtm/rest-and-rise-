@@ -2,15 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import AuthForm from "@/components/AuthForm";
 import QuestMap from "@/components/QuestMap";
+import HeroMapParallax from "@/components/HeroMapParallax";
+import WorldGameMap from "@/components/WorldGameMap";
+import ActivityCarousel from "@/components/ActivityCarousel";
 import { createClient } from "@/lib/supabase/server";
 import type { Campaign } from "@/lib/types";
-
-const CAT_BADGE: Record<string, string> = {
-  봉사: "bg-forest text-white",
-  리트릿: "bg-gold text-forest-deep",
-  캠페인: "bg-leaf text-white",
-};
 
 function fmtDate(d: string | null) {
   if (!d) return "일정 조율 중";
@@ -80,99 +78,101 @@ export default async function Home() {
         <section className="bg-field relative overflow-hidden">
           <div className="mx-auto grid max-w-6xl items-center gap-8 px-5 py-16 sm:py-24 lg:grid-cols-2">
             <div className="animate-grow-in text-center lg:text-left">
-              <span className="inline-flex items-center gap-2 rounded-full border border-leaf/20 bg-white/70 px-4 py-1.5 text-sm font-medium text-forest">
-                🌱 Give Back Seed · 소셜 웰니스 리트릿
-              </span>
-              <h1 className="mt-5 font-display text-4xl leading-tight text-forest text-balance sm:text-5xl lg:text-6xl">
-                남을 돕는 여정에서
-                <br />
-                <span className="text-leaf">진짜 웰니스</span>를 만나다
+              <h1 className="font-display text-4xl leading-[1.2] text-forest text-balance sm:text-5xl sm:leading-[1.15] lg:text-[3.4rem]">
+                다른 생명을 돕는 일이 곧{" "}
+                <span className="text-leaf">나의 웰니스</span>가 되다
               </h1>
-              <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-ink-soft lg:mx-0">
-                베풂을 먹고 자라는 씨앗, <b className="text-forest">기백씨</b>.
-                돌봄이 필요한 곳에 함께하고 그 자리에서{" "}
-                <b className="text-forest">웰니스 리트릿</b>을 나누며, 남을 돕는
-                일이 곧 나의 회복이 되는 순간을 경험해요.
+              <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-ink-soft text-balance lg:mx-0">
+                회복과 성장을 함께 만드는 소셜 임팩트 커뮤니티
               </p>
-              <div className="mx-auto mt-5 inline-flex max-w-md items-center gap-2 rounded-2xl border border-gold/40 bg-butter/40 px-4 py-2.5 text-sm text-forest-deep lg:mx-0">
-                <span className="text-lg">🎟️</span>
-                <span>
-                  참여할수록 기백씨가 <b>5P·10P씩</b> 쌓여,{" "}
-                  <b>유료 웰니스 프로그램 할인</b>으로 돌아와요.
-                </span>
-              </div>
               <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
                 <Link
-                  href="/signup"
+                  href="/#story"
                   className="w-full rounded-full bg-forest px-7 py-3.5 text-center font-medium text-white shadow-md transition-colors hover:bg-forest-deep sm:w-auto"
                 >
-                  기백씨와 함께하기
+                  마을 둘러보기
                 </Link>
                 <Link
-                  href="/#story"
+                  href="/#activities"
                   className="w-full rounded-full border border-leaf/30 bg-white px-7 py-3.5 text-center font-medium text-forest transition-colors hover:bg-cream-deep sm:w-auto"
                 >
-                  세계관 살펴보기
+                  프로그램 참여하기
                 </Link>
               </div>
             </div>
 
             <div className="relative flex justify-center">
-              <QuestMap />
+              <HeroMapParallax>
+                <QuestMap showProgress={false} />
+              </HeroMapParallax>
             </div>
           </div>
         </section>
 
-        {/* STORY / 세계관 */}
-        <section id="story" className="scroll-mt-20 bg-white">
-          <div className="mx-auto max-w-6xl px-5 py-16 sm:py-24">
-            <div className="grid items-center gap-12 lg:grid-cols-2">
-              <div className="order-2 flex justify-center lg:order-1">
-                <Image
-                  src="/brand/gibaek-thumbsup.png"
-                  alt="기백씨"
-                  width={420}
-                  height={420}
-                  className="h-auto w-64 object-contain sm:w-80"
-                />
-              </div>
-              <div className="order-1 lg:order-2">
-                <p className="font-medium text-leaf">기백씨 · Give Back Seed</p>
-                <h2 className="mt-2 font-display text-3xl text-forest sm:text-4xl">
-                  돌려줄수록 자라나는 씨앗
-                </h2>
-                <div className="mt-5 space-y-4 text-ink-soft leading-relaxed">
-                  <p>
-                    기백씨는 <b className="text-forest">‘Give Back Seed’</b>,
-                    베풂을 먹고 자라는 작은 씨앗이에요. 처음엔 곤히 잠들어 있지만,
-                    당신이 봉사와 캠페인에 참여할 때마다 조금씩 눈을 뜹니다.
-                  </p>
-                  <p>
-                    가장 높은 차원의 자기 성찰은 남을 돕고 나를 돕는 일에서
-                    가능하다고 믿어요. 한 번의 활동이 하나의 씨앗이 되고, 그
-                    씨앗이 모여 <b className="text-forest">회복의 숲</b>이 됩니다.
-                  </p>
-                  <p>
-                    나를 위한 웰니스가 우리 사회를 위한 웰니스로. 그게
-                    레스트앤라이즈의 세계관이에요.
-                  </p>
-                </div>
-              </div>
+        {/* STORY / 세계관 — 기백씨가 마을을 돌며 씨앗을 키우는 게임보드 */}
+        <section
+          id="story"
+          className="flex min-h-[100svh] scroll-mt-20 flex-col overflow-hidden bg-[#dcebc0]"
+        >
+          {/* 상단 헤드카피 */}
+          <div className="px-5 pb-2 pt-14 text-center sm:pt-20">
+            <p className="font-medium text-leaf">기백씨 · Give Back Seed</p>
+            <h2 className="mt-2 font-display text-3xl text-forest text-balance sm:text-4xl">
+              생명을 돕는 일이 나를 위한 웰니스 포인트
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-ink-soft leading-relaxed">
+              우리 일상에 필요한 의미와 가치를 느끼며 나만의 기백씨를 키워보세요.
+            </p>
+
+            {/* 기백씨 자기소개 · 활용법 말풍선 */}
+            <div className="mx-auto mt-6 flex max-w-2xl items-start gap-3 rounded-2xl border border-leaf/25 bg-white/75 p-4 text-left shadow-sm backdrop-blur sm:gap-4 sm:p-5">
+              <Image
+                src="/brand/gibaek-thumbsup.png"
+                alt="기백씨"
+                width={72}
+                height={66}
+                className="h-14 w-auto shrink-0 object-contain sm:h-16"
+              />
+              <p className="text-sm leading-relaxed text-ink-soft text-pretty sm:text-[15px]">
+                안녕하세요, 나는 <b className="text-forest">기백씨</b>예요. ‘Give
+                Back Seed’, 베풂을 먹고 자라는 작은 씨앗이죠. 여러분이 봉사·캠페인에
+                함께할 때마다 <b className="text-forest">포인트를 이고 무럭무럭</b>{" "}
+                자라나요. 남을 돕는 일이 곧 나를 돕는 일, 우리 함께 회복의 숲을
+                키워가요.
+              </p>
             </div>
+          </div>
+
+          {/* 마을 게임보드 (남는 공간 채움) */}
+          <div className="relative min-h-0 flex-1 px-4 pb-2">
+            <WorldGameMap />
+          </div>
+
+          {/* 하단 CTA */}
+          <div className="px-5 pb-14 pt-4 text-center">
+            <Link
+              href="/signup"
+              className="inline-block rounded-full bg-forest px-8 py-3.5 font-medium text-white shadow-lg transition-transform hover:scale-105"
+            >
+              내 씨앗 만들기 →
+            </Link>
           </div>
         </section>
 
         {/* ACTIVITIES — 우리의 활동 */}
-        <section id="activities" className="scroll-mt-20 bg-cream-deep/50">
+        <section id="activities" className="scroll-mt-20 bg-cream-deep/60">
           <div className="mx-auto max-w-6xl px-5 py-16 sm:py-24">
             <div className="text-center">
               <p className="font-medium text-leaf">OUR ACTIVITIES</p>
               <h2 className="mt-2 font-display text-3xl text-forest sm:text-4xl">
-                봉사, 그리고 우리를 위한 웰니스 리트릿
+                이달의 소셜 커뮤니티 프로그램
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-ink-soft">
-                돌봄이 필요한 곳에 함께하고, 봉사자들끼리도 스스로를 챙겨요. 남을
-                돕는 여정 속에서 함께 회복하는 레스트앤라이즈의 활동이에요.
+                레스트앤라이즈만의 <b className="text-forest">웰니스스러운 봉사활동과
+                모임</b>에 함께 해요.
+              </p>
+              <p className="mx-auto mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3.5 py-1.5 text-sm text-ink-soft">
+                💬 모든 프로그램은 참여 신청 후 안내 메시지를 확인해 주세요.
               </p>
             </div>
 
@@ -195,12 +195,8 @@ export default async function Home() {
                       className="flex flex-col rounded-2xl border-2 border-forest/20 bg-white p-6 shadow-sm"
                     >
                       <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            CAT_BADGE[c.category] ?? "bg-forest text-white"
-                          }`}
-                        >
-                          {c.category}
+                        <span className="rounded-full bg-butter px-2.5 py-1 text-xs font-semibold text-forest-deep">
+                          {c.fee_label ?? "무료"}
                         </span>
                         <span className="text-xs font-semibold text-forest">
                           ● 모집 중
@@ -210,8 +206,14 @@ export default async function Home() {
                         {c.title}
                       </h4>
                       <div className="mt-2 space-y-0.5 text-sm text-ink-soft">
-                        <p>📅 {fmtDate(c.activity_date)}</p>
+                        <p>
+                          📅 {fmtDate(c.activity_date)}
+                          {c.activity_time ? ` ${c.activity_time}` : ""}
+                        </p>
                         <p>📍 {c.location ?? "추후 안내"}</p>
+                        {c.fee_note && (
+                          <p className="text-ink-soft/70">🧾 {c.fee_note}</p>
+                        )}
                       </div>
                       {c.description && (
                         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-ink-soft">
@@ -227,85 +229,26 @@ export default async function Home() {
                     </div>
                   ))}
                 </div>
-
-                <h3 className="mt-16 text-center font-display text-2xl text-forest">
-                  함께 걸어온 활동
-                </h3>
               </div>
             )}
+          </div>
+        </section>
 
-            {/* 스와이프 카드 */}
-            <div className="mt-12">
-              <div className="-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {ACTIVITIES.map((a) => (
-                  <div
-                    key={a.name}
-                    className="group w-[280px] shrink-0 snap-start overflow-hidden rounded-2xl border border-leaf/15 bg-white shadow-sm transition-shadow hover:shadow-md sm:w-[300px]"
-                  >
-                    {/* 활동 사진 */}
-                    <div className="relative aspect-[4/3] overflow-hidden">
-                      <Image
-                        src={a.img}
-                        alt={a.name}
-                        fill
-                        sizes="300px"
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <span
-                        className={`absolute left-3 top-3 z-10 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm ${
-                          a.tagType === "봉사"
-                            ? "bg-forest text-white"
-                            : "bg-gold text-forest-deep"
-                        }`}
-                      >
-                        {a.tag}
-                      </span>
-                    </div>
-                    <div className="p-5">
-                      <h3 className="font-display text-xl text-forest">
-                        {a.name}
-                      </h3>
-                      <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
-                        {a.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-
-                {/* 예정 활동 박스 */}
-                {UPCOMING.map((u) => (
-                  <div
-                    key={u.name}
-                    className="flex w-[280px] shrink-0 snap-start flex-col items-center justify-center rounded-2xl border-2 border-dashed border-leaf/30 bg-cream/40 p-6 text-center sm:w-[300px]"
-                  >
-                    <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-ink-soft">
-                      {u.tag}
-                    </span>
-                    <p className="mt-4 font-display text-xl text-forest/70">
-                      {u.name}
-                    </p>
-                    <p className="mt-2 text-sm text-ink-soft">
-                      곧 함께할 예정이에요
-                    </p>
-                  </div>
-                ))}
-
-                {/* To be continued */}
-                <div className="flex w-[220px] shrink-0 snap-start flex-col items-center justify-center rounded-2xl border-2 border-dashed border-leaf/25 p-6 text-center">
-                  <span className="text-3xl">🌱</span>
-                  <p className="mt-3 font-display text-lg text-forest/60">
-                    To be continued…
-                  </p>
-                  <p className="mt-1 text-xs text-ink-soft">
-                    더 많은 활동이 이어져요
-                  </p>
-                </div>
-              </div>
-
-              <p className="mt-2 text-center text-xs text-ink-soft/60">
-                ← 옆으로 넘겨보세요 →
+        {/* JOURNEY — 함께 걸어온 활동 */}
+        <section id="journey" className="scroll-mt-20 bg-mist">
+          <div className="mx-auto max-w-6xl px-5 py-16 sm:py-24">
+            <div className="text-center">
+              <p className="font-medium text-leaf">OUR JOURNEY</p>
+              <h2 className="mt-2 font-display text-3xl text-forest sm:text-4xl">
+                함께 걸어온 활동
+              </h2>
+              <p className="mx-auto mt-3 max-w-2xl text-ink-soft">
+                레스트앤라이즈가 지나온 봉사와 웰니스의 순간들이에요.
               </p>
             </div>
+
+            {/* 스와이프 카드 */}
+            <ActivityCarousel activities={ACTIVITIES} upcoming={UPCOMING} />
           </div>
         </section>
 
@@ -357,7 +300,7 @@ export default async function Home() {
         </section>
 
         {/* HOW IT WORKS */}
-        <section className="bg-cream-deep/50">
+        <section className="bg-cream-deep/60">
           <div className="mx-auto max-w-6xl px-5 py-16 sm:py-24">
             <div className="text-center">
               <h2 className="font-display text-3xl text-forest sm:text-4xl">
@@ -410,22 +353,20 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="bg-forest">
-          <div className="mx-auto max-w-3xl px-5 py-16 text-center sm:py-20">
-            <h2 className="font-display text-3xl text-white text-balance sm:text-4xl">
-              당신의 첫 씨앗을 심어볼까요?
+        {/* CTA — 바로 회원가입 */}
+        <section id="join" className="scroll-mt-20 bg-forest">
+          <div className="mx-auto max-w-md px-5 py-16 text-center sm:py-20">
+            <h2 className="font-display text-3xl text-white sm:text-4xl">
+              레스트앤라이즈
+              <br />
+              마을 입주하기
             </h2>
-            <p className="mx-auto mt-4 max-w-lg text-cream/80">
-              곧 더 많은 분들과 함께할 준비를 마쳤어요. 지금 기백씨와 함께 회복과
-              성장의 여정을 시작해보세요.
+            <p className="mx-auto mt-4 max-w-md text-balance text-cream/80">
+              봉사로 내 마음속 씨앗을 키우며, 회복과 성장의 여정을 함께해요.
             </p>
-            <Link
-              href="/signup"
-              className="mt-8 inline-block rounded-full bg-gold px-8 py-3.5 font-medium text-forest-deep shadow-md transition-transform hover:scale-105"
-            >
-              무료로 함께하기
-            </Link>
+            <div className="mt-8 rounded-3xl bg-white p-6 text-left shadow-lg sm:p-8">
+              <AuthForm mode="signup" />
+            </div>
           </div>
         </section>
       </main>

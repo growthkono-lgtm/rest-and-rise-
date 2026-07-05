@@ -27,11 +27,11 @@ export default async function SignupPage() {
               className="h-24 w-auto object-contain"
             />
             <span className="font-display text-2xl text-forest">
-              나만의 기백씨 심기
+              레스트앤라이즈 마을 입주하기
             </span>
           </Link>
           <p className="mt-2 text-sm text-ink-soft">
-            가입하면 첫 씨앗이 심어져요. 봉사할수록 무럭무럭 자라나요.
+            봉사로 내 마음속 씨앗을 키우며 회복과 성장의 여정을 함께해요.
           </p>
         </div>
 

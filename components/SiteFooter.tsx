@@ -16,7 +16,7 @@ export default function SiteFooter() {
           <div>
             <p className="font-display text-lg text-forest">레스트앤라이즈</p>
             <p className="text-sm text-ink-soft">
-              회복과 성장의 소셜 웰니스 캠페인
+              회복과 성장을 함께 만드는 소셜 임팩트 커뮤니티
             </p>
           </div>
         </div>
@@ -32,7 +32,7 @@ export default function SiteFooter() {
           </a>
           <div className="flex gap-4">
             <Link href="/signup" className="transition-colors hover:text-forest">
-              함께하기
+              입주하기
             </Link>
             <Link href="/login" className="transition-colors hover:text-forest">
               로그인

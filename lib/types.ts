@@ -29,9 +29,12 @@ export type Campaign = {
   title: string;
   category: CampaignCategory;
   activity_date: string | null;
+  activity_time: string | null;
   location: string | null;
   description: string | null;
   capacity: number | null;
+  fee_label: string | null;
+  fee_note: string | null;
   status: CampaignStatus;
   created_at: string;
 };

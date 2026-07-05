@@ -42,6 +42,40 @@ body {
   background-size: 22px 22px;
 }
 
+/* 옅은 올리브그린 톤 — 섹션 리듬용 (leaf/sprout 계열) */
+.bg-mist {
+  background-color: #e8f0d4;
+}
+
+/* 마을 주민이 어슬렁어슬렁 돌아다니는 모션 (게임보드) */
+@keyframes village-wander {
+  0% { transform: translate(-8px, 0); }
+  25% { transform: translate(0, -5px); }
+  50% { transform: translate(8px, 0); }
+  75% { transform: translate(0, -5px); }
+  100% { transform: translate(-8px, 0); }
+}
+.village-wander {
+  animation: village-wander 5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .village-wander {
+    animation: none;
+  }
+}
+
+/* 봉사 도착 시 포인트가 하나 팝 떴다가 위로 사라지는 모션 */
+@keyframes point-pop {
+  0% { opacity: 0; transform: translateY(8px) scale(0.6); }
+  18% { opacity: 1; transform: translateY(0) scale(1.05); }
+  32% { transform: translateY(-2px) scale(1); }
+  72% { opacity: 1; transform: translateY(-22px) scale(1); }
+  100% { opacity: 0; transform: translateY(-46px) scale(0.92); }
+}
+.point-pop {
+  animation: point-pop 1.5s ease-out forwards;
+}
+
 .text-balance {
   text-wrap: balance;
 }

@@ -9,7 +9,14 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users on delete cascade,
   email text,
   full_name text,
+  nickname text,
+  phone text,
   is_admin boolean not null default false,
+  consent_privacy boolean not null default false,
+  consent_thirdparty boolean not null default false,
+  consent_at timestamptz,
+  consent_marketing boolean not null default false,
+  consent_marketing_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -89,12 +96,23 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, full_name, is_admin)
+  insert into public.profiles (
+    id, email, full_name, nickname, phone, is_admin,
+    consent_privacy, consent_thirdparty, consent_at,
+    consent_marketing, consent_marketing_at
+  )
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', ''),
-    new.email = 'ceo@h-grs.com'  -- ADMIN_EMAIL
+    nullif(new.raw_user_meta_data->>'nickname', ''),
+    nullif(new.raw_user_meta_data->>'phone', ''),
+    new.email = 'ceo@h-grs.com',  -- ADMIN_EMAIL
+    coalesce((new.raw_user_meta_data->>'consent_privacy')::boolean, false),
+    coalesce((new.raw_user_meta_data->>'consent_thirdparty')::boolean, false),
+    case when (new.raw_user_meta_data->>'consent_privacy') = 'true' then now() else null end,
+    coalesce((new.raw_user_meta_data->>'consent_marketing')::boolean, false),
+    case when (new.raw_user_meta_data->>'consent_marketing') = 'true' then now() else null end
   )
   on conflict (id) do nothing;
 
@@ -131,9 +149,12 @@ create table if not exists public.campaigns (
   title text not null,
   category text not null default '봉사' check (category in ('봉사', '리트릿', '캠페인')),
   activity_date date,
+  activity_time text,
   location text,
   description text,
   capacity int,
+  fee_label text default '무료',
+  fee_note text,
   status text not null default 'open' check (status in ('open', 'closed')),
   created_at timestamptz not null default now()
 );

@@ -45,13 +45,13 @@ export default async function SiteHeader() {
             href="/#story"
             className="hidden rounded-full px-3 py-2 text-ink-soft transition-colors hover:text-forest sm:inline-block"
           >
-            세계관
+            마을
           </Link>
           <Link
-            href="/#campaign"
+            href="/#activities"
             className="hidden rounded-full px-3 py-2 text-ink-soft transition-colors hover:text-forest sm:inline-block"
           >
-            캠페인
+            프로그램
           </Link>
 
           {user ? (
@@ -92,7 +92,7 @@ export default async function SiteHeader() {
                 href="/signup"
                 className="rounded-full bg-forest px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-forest-deep"
               >
-                함께하기
+                입주하기
               </Link>
             </>
           )}

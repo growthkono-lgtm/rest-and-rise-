@@ -78,24 +78,45 @@ export async function createCampaign(formData: FormData) {
   const supabase = await requireAdmin();
   if (!supabase) return;
 
-  const title = String(formData.get("title") || "").trim();
-  if (!title) return;
-  const category = String(formData.get("category") || "봉사");
-  const activity_date = String(formData.get("activity_date") || "").trim();
-  const location = String(formData.get("location") || "").trim();
-  const description = String(formData.get("description") || "").trim();
-  const capacityRaw = String(formData.get("capacity") || "").trim();
+  const fields = readCampaignFields(formData);
+  if (!fields) return;
 
-  await supabase.from("campaigns").insert({
-    title,
-    category: ["봉사", "리트릿", "캠페인"].includes(category) ? category : "봉사",
-    activity_date: activity_date || null,
-    location: location || null,
-    description: description || null,
-    capacity: capacityRaw ? Number(capacityRaw) : null,
-    status: "open",
-  });
+  await supabase.from("campaigns").insert({ ...fields, status: "open" });
 
+  revalidatePath("/admin/campaigns");
+  revalidatePath("/");
+}
+
+export async function updateCampaign(formData: FormData) {
+  const supabase = await requireAdmin();
+  if (!supabase) return;
+
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+  const fields = readCampaignFields(formData);
+  if (!fields) return;
+  const status = String(formData.get("status") || "open");
+
+  await supabase
+    .from("campaigns")
+    .update({
+      ...fields,
+      status: ["open", "closed"].includes(status) ? status : "open",
+    })
+    .eq("id", id);
+
+  revalidatePath("/admin/campaigns");
+  revalidatePath("/");
+}
+
+export async function deleteCampaign(formData: FormData) {
+  const supabase = await requireAdmin();
+  if (!supabase) return;
+
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+
+  await supabase.from("campaigns").delete().eq("id", id);
   revalidatePath("/admin/campaigns");
   revalidatePath("/");
 }
@@ -111,4 +132,30 @@ export async function setCampaignStatus(formData: FormData) {
   await supabase.from("campaigns").update({ status }).eq("id", id);
   revalidatePath("/admin/campaigns");
   revalidatePath("/");
+}
+
+// 생성·수정 공통 입력 파싱
+function readCampaignFields(formData: FormData) {
+  const title = String(formData.get("title") || "").trim();
+  if (!title) return null;
+  const category = String(formData.get("category") || "봉사");
+  const activity_date = String(formData.get("activity_date") || "").trim();
+  const activity_time = String(formData.get("activity_time") || "").trim();
+  const location = String(formData.get("location") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+  const capacityRaw = String(formData.get("capacity") || "").trim();
+  const fee_label = String(formData.get("fee_label") || "").trim();
+  const fee_note = String(formData.get("fee_note") || "").trim();
+
+  return {
+    title,
+    category: ["봉사", "리트릿", "캠페인"].includes(category) ? category : "봉사",
+    activity_date: activity_date || null,
+    activity_time: activity_time || null,
+    location: location || null,
+    description: description || null,
+    capacity: capacityRaw ? Number(capacityRaw) : null,
+    fee_label: fee_label || "무료",
+    fee_note: fee_note || null,
+  };
 }

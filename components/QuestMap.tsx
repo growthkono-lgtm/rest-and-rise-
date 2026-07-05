@@ -36,7 +36,13 @@ const SEGMENTS = QUESTS.map((q, i) => {
   return { x1: q.x, y1: q.y, x2: next.x, y2: next.y };
 });
 
-export default function QuestMap() {
+export default function QuestMap({
+  showProgress = true,
+  className,
+}: {
+  showProgress?: boolean;
+  className?: string;
+}) {
   const [pos, setPos] = useState(0); // 기백씨가 향하는 퀘스트 index
   const [walking, setWalking] = useState(false);
   const [done, setDone] = useState<boolean[]>(() =>
@@ -83,7 +89,11 @@ export default function QuestMap() {
   const growScale = 0.7 + clearedCount * 0.1; // 0.7(씨앗) → 1.2(다 자람)
 
   return (
-    <div className="animate-grow-in relative mx-auto aspect-square w-full max-w-md">
+    <div
+      className={`relative mx-auto aspect-square w-full ${
+        className ?? "animate-grow-in max-w-md"
+      }`}
+    >
       {/* 부드럽게 떠다니는 맵 보드 */}
       <div className="animate-float relative h-full w-full">
         {/* 맵 그림자 */}
@@ -250,13 +260,15 @@ export default function QuestMap() {
       </div>
 
       {/* 진행 상태 캡션 */}
-      <div className="mt-4 flex items-center justify-center gap-2 text-sm text-ink-soft">
-        <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-sprout" />
-        함께 봉사할수록 기백씨가 무럭무럭 자라나요
-        <span className="font-semibold text-forest">
-          {clearedCount}/{QUESTS.length}
-        </span>
-      </div>
+      {showProgress && (
+        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-ink-soft">
+          <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-sprout" />
+          함께 봉사할수록 기백씨가 무럭무럭 자라나요
+          <span className="font-semibold text-forest">
+            {clearedCount}/{QUESTS.length}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
