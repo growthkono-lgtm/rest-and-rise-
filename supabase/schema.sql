@@ -147,6 +147,9 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- 트리거 전용 함수는 API(RPC)에서 직접 호출 불가하게 (트리거 동작에는 영향 없음)
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
 -- ── 인증 이미지 저장용 Storage 버킷 ────────────────────────────────
 insert into storage.buckets (id, name, public)
 values ('proofs', 'proofs', true)
@@ -231,7 +234,10 @@ begin
   return 'ok';
 end $$;
 
+-- 운영진 관리 RPC는 로그인 사용자만 호출(내부에서 오너 검증). anon 노출 차단.
+revoke execute on function public.promote_manager_by_phone(text) from public, anon;
 grant execute on function public.promote_manager_by_phone(text) to authenticated;
+revoke execute on function public.demote_to_member(uuid) from public, anon;
 grant execute on function public.demote_to_member(uuid) to authenticated;
 
 -- ── applications (캠페인 신청 — 게스트 제출) ────────────────────────
@@ -298,7 +304,7 @@ drop policy if exists "points - admin insert" on public.point_transactions;
 create policy "points - admin insert" on public.point_transactions
   for insert with check (public.is_admin());
 
--- 참여완료 취소 시 지급 포인트 회수(운영진)
+-- 참여완료 취소 시 지급 포인트 회수(운영진) — 신청 연계 건만, 가입선물 등은 보호
 drop policy if exists "points - staff delete" on public.point_transactions;
 create policy "points - staff delete" on public.point_transactions
-  for delete using (public.is_admin());
+  for delete using (public.is_admin() and application_id is not null);
