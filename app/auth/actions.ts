@@ -79,7 +79,7 @@ export async function signup(
     if (error.code === "email_address_invalid" || msg.includes("invalid")) {
       return {
         error:
-          "유효한 이메일 주소를 입력해주세요. (test@ 같은 테스트용 주소는 받을 수 없어요)",
+          "실제로 받아볼 수 있는 이메일 주소를 입력해주세요. (test@gmail.com 처럼 가상의 주소는 이메일 서버에서 거부돼요)",
       };
     }
     if (msg.includes("weak") || msg.includes("password")) {

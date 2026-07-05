@@ -27,7 +27,7 @@ export default async function SignupPage() {
               className="h-24 w-auto object-contain"
             />
             <span className="font-display text-2xl text-forest">
-              레스트앤라이즈 동료 가입하기
+              레스트앤라이즈 크루 신청하기
             </span>
           </Link>
           <p className="mt-2 text-sm text-ink-soft">

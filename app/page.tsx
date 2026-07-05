@@ -359,7 +359,7 @@ export default async function Home() {
             <h2 className="font-display text-3xl text-white sm:text-4xl">
               레스트앤라이즈
               <br />
-              동료 가입하기
+              크루 신청하기
             </h2>
             <p className="mx-auto mt-4 max-w-md text-balance text-cream/80">
               봉사로 내 마음속 씨앗을 키우며, 회복과 성장의 여정을 함께해요.
