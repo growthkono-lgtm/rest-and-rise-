@@ -17,22 +17,24 @@ export async function login(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const phone = String(formData.get("phone") || "").trim();
+  const identifier = String(formData.get("identifier") || "").trim();
   const password = String(formData.get("password") || "");
   const next = String(formData.get("next") || "/dashboard");
 
-  if (!phone || !password) {
-    return { error: "연락처와 비밀번호를 입력해주세요." };
+  if (!identifier || !password) {
+    return { error: "연락처(또는 이메일)와 비밀번호를 입력해주세요." };
   }
 
+  // 이메일이면 그대로, 연락처면 내부 로그인용 이메일로 변환
+  const email = identifier.includes("@")
+    ? identifier
+    : phoneToLoginEmail(identifier);
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
-    email: phoneToLoginEmail(phone),
-    password,
-  });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return { error: "연락처 또는 비밀번호가 올바르지 않아요." };
+    return { error: "연락처(또는 이메일) 또는 비밀번호가 올바르지 않아요." };
   }
 
   revalidatePath("/", "layout");

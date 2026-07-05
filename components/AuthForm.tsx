@@ -64,13 +64,23 @@ export default function AuthForm({
         </>
       )}
 
-      <Field
-        label="연락처"
-        name="phone"
-        type="tel"
-        placeholder="010-1234-5678"
-        autoComplete="tel"
-      />
+      {mode === "signup" ? (
+        <Field
+          label="연락처"
+          name="phone"
+          type="tel"
+          placeholder="010-1234-5678"
+          autoComplete="tel"
+        />
+      ) : (
+        <Field
+          label="연락처 또는 이메일"
+          name="identifier"
+          type="text"
+          placeholder="010-1234-5678"
+          autoComplete="username"
+        />
+      )}
 
       <Field
         label="비밀번호"
